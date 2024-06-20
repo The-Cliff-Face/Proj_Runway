@@ -11,6 +11,9 @@ const montserrat = Montserrat({
     display: 'swap',
 });
 
+// This function call creates the theme that is used by the whole application.
+// You can customize it by following the docs at mui.com.
+// Especially helpful is https://mui.com/material-ui/customization/color/
 const theme = createTheme({
     // colors ripped from https://zenoo.github.io/mui-theme-creator/
     palette: {
@@ -36,16 +39,6 @@ const theme = createTheme({
         },
         success: {
             main: '#00b16a',
-        },
-    },
-    // disable button ripple globally (see https://mui.com/material-ui/getting-started/faq/#how-can-i-disable-the-ripple-effect-globally)
-    components: {
-        // Name of the component
-        MuiButtonBase: {
-            defaultProps: {
-                // The props to apply
-                disableRipple: true, // No more ripple, on the whole application
-            },
         },
     },
 
