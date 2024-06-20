@@ -16,10 +16,13 @@ export default function SignIn() {
   const handleSubmit = (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    console.log({
-      email: data.get('email'),
-      password: data.get('password'),
-    });
+
+    // PASS INPUT DATA TO A DIFFERENT JS FILE
+
+    //console.log({
+    //  email: data.get('email'),
+    //  password: data.get('password'),
+    //});
   };
 
   return (
@@ -79,7 +82,7 @@ export default function SignIn() {
               </Link>
             </Grid>
             <Grid item>
-              <Link href="#" variant="body2">
+              <Link href="../signup" variant="body2">
                 {"Don't have an account? Sign Up"}
               </Link>
             </Grid>
