@@ -47,7 +47,11 @@ app.post('/api/signin', async (req, res) => {
     // compare user.password (which is hashed) to the hash of the
     // password sent to this API endpoint
     bcrypt.compare(req.body.password, user.password, function (err, res) {
-        // compare password to one in DB
+        if (res) {
+            console.log('Login successful!');
+        } else {
+            console.log('PERMISSION DENIED');
+        }
     });
     console.log(user.email, user.password);
     let ret = {}
