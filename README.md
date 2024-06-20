@@ -75,3 +75,6 @@ src/App.js in the Cards Lab Demo project.
 breaks the styling for the Material UI components. You need to delete it
 and replace it with the layout file provided near the top of
 https://mui.com/material-ui/integrations/nextjs/.
+
+# Proj_Runway
+Runway Project for COP4331 Summer 2024
