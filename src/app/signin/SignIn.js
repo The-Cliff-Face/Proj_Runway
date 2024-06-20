@@ -12,17 +12,27 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 
+// https://www.npmjs.com/package/bcryptjs
+let bcrypt = require('bcryptjs');
+const saltLength = 8;
+
+function storePassword(password) {
+    bcrypt.hash(password, saltLength, function (err, hash) {
+        // make API call to store hashed password in MongoDB Atlas
+    });
+}
+
+function checkPassword(password) {
+    bcrypt.compare(password, myHash, function (err, res) {
+        // compare password to one in DB
+    });
+}
+
 export default function SignIn() {
   const handleSubmit = (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-
-    // PASS INPUT DATA TO A DIFFERENT JS FILE
-
-    //console.log({
-    //  email: data.get('email'),
-    //  password: data.get('password'),
-    //});
+    //checkPassword(data.get('password'));
   };
 
   return (
