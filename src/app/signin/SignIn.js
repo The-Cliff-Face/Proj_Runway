@@ -12,12 +12,32 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 
+// https://nextjs.org/docs/pages/building-your-application/routing/redirecting
+import { useRouter } from 'next/navigation';
+
 export default function SignIn() {
-  const handleSubmit = (event) => {
+  const router = useRouter();
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    // TODO send POST request to API and receive some kind of JWT thing
-    //checkPassword(data.get('password'));
+    let obj = {
+      email: data.get('email'),
+      password: data.get('password')
+    };
+    let js = JSON.stringify(obj);
+
+    const response = await fetch(
+      'http://localhost:3001/api/signin',
+      {
+        method: 'POST',
+        body: js,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+
+    let res = JSON.parse(await response.text());
+    router.push('/home');
   };
 
   return (
