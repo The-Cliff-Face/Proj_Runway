@@ -11,8 +11,22 @@ import Box from '@mui/material/Box';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
+import Tooltip from '@mui/material/Tooltip';
+
+import { useState } from 'react';
 
 export default function SignUp() {
+  const [passwordStrength, setPasswordStrength] = useState(0);
+
+  // https://medium.com/@anthonyzhang220/form-validation-with-material-ui-textfield-component-and-react-29f0f0b26849
+  function handleValidation(e) {
+    let password = e.target.value;
+    let zxcvbn = require('zxcvbn');
+    let score = zxcvbn(password).score;
+
+    setPasswordStrength(score);
+  }
+
   const handleSubmit = (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -73,15 +87,20 @@ export default function SignUp() {
               />
             </Grid>
             <Grid item xs={12}>
-              <TextField
-                required
-                fullWidth
-                name="password"
-                label="Password"
-                type="password"
-                id="password"
-                autoComplete="new-password"
-              />
+              <Tooltip title={passwordStrength} placement="right" arrow>
+                <TextField
+                  required
+                  fullWidth
+                  name="password"
+                  label="Password"
+                  type="password"
+                  id="password"
+                  autoComplete="new-password"
+                  error
+                  helperText={'incorrect password'}
+                  onChange={(e) => handleValidation(e)}
+                />
+              </Tooltip>
             </Grid>
           </Grid>
           <Button
