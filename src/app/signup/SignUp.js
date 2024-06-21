@@ -15,8 +15,24 @@ import Tooltip from '@mui/material/Tooltip';
 
 import { useState } from 'react';
 
+// https://stackoverflow.com/questions/46155/how-can-i-validate-an-email-address-in-javascript
+const validateEmail = (email) => {
+  return String(email)
+    .toLowerCase()
+    .match(
+      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+    );
+};
+
+
+
 export default function SignUp() {
+  const passwordStrengthDescriptions = [
+    'very weak', 'weak', 'medium', 'strong', 'very strong'
+  ]
   const [passwordStrength, setPasswordStrength] = useState(0);
+
+  const [emailIsValid, setEmailIsValid] = useState(true);
 
   // https://medium.com/@anthonyzhang220/form-validation-with-material-ui-textfield-component-and-react-29f0f0b26849
   function handleValidation(e) {
@@ -27,13 +43,20 @@ export default function SignUp() {
     setPasswordStrength(score);
   }
 
+  function handleEmailValidation(e) {
+    setEmailIsValid(validateEmail(e.target.value));
+  }
+
   const handleSubmit = (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
+
     console.log({
       email: data.get('email'),
       password: data.get('password'),
     });
+
+
   };
 
   return (
@@ -84,10 +107,12 @@ export default function SignUp() {
                 label="Email Address"
                 name="email"
                 autoComplete="email"
+                onChange={(e) => handleEmailValidation(e)}
+                error={!emailIsValid}
               />
             </Grid>
             <Grid item xs={12}>
-              <Tooltip title={passwordStrength} placement="right" arrow>
+              <Tooltip title={passwordStrengthDescriptions[passwordStrength]} placement="right" arrow>
                 <TextField
                   required
                   fullWidth
@@ -96,8 +121,6 @@ export default function SignUp() {
                   type="password"
                   id="password"
                   autoComplete="new-password"
-                  error
-                  helperText={'incorrect password'}
                   onChange={(e) => handleValidation(e)}
                 />
               </Tooltip>
