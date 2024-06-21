@@ -15,8 +15,6 @@ import Container from '@mui/material/Container';
 // https://nextjs.org/docs/pages/building-your-application/routing/redirecting
 import { useRouter } from 'next/navigation';
 
-import ButtonAppBar from './ButtonAppBar.js';
-
 export default function SignIn() {
   const router = useRouter();
 
@@ -43,7 +41,6 @@ export default function SignIn() {
   };
 
   return (
-    <AppBar>
       <Container component="main" maxWidth="xs">
         <CssBaseline />
         <Box
@@ -108,6 +105,5 @@ export default function SignIn() {
           </Box>
         </Box>
       </Container>
-    </AppBar>
   );
 }

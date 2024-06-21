@@ -7,10 +7,7 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
 
-// probably have to pass in child components or something
-// to get the AppBar to display *around* the content of the page
-// (or at least at the top)
-export default function ButtonAppBar() {
+export default function RunwayAppBar() {
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static">
