@@ -26,13 +26,24 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random#getting_a_random_integer_between_two_values
+function getRandomInt(min, max) {
+    const minCeiled = Math.ceil(min);
+    const maxFloored = Math.floor(max);
+    return Math.floor(Math.random() * (maxFloored - minCeiled) + minCeiled); // The maximum is exclusive and the minimum is inclusive
+}
+
 app.post('/api/signup', async (req, res) => {
+    // validate format of email and username
+
     const db = client.db('Runway');
     const users = db.collection('Users');
 
     bcrypt.hash(req.body.password, saltLength, function (err, hash) {
         let newUser = req.body;
         newUser.password = hash;
+        newUser.emailIsVerified = false;
+        newUser.verificationCode = getRandomInt(1000, 10000);
         users.insertOne(newUser);
         let ret = {}
         res.status(200).json(ret);
