@@ -24,7 +24,15 @@ const validateEmail = (email) => {
     );
 };
 
-
+// https://stackoverflow.com/questions/16299036/to-check-if-a-string-is-alphanumeric-in-javascript
+// only allow alphanumeric usernames
+const validateUsername = (username) => {
+  return String(username)
+    .toLowerCase()
+    .match(
+      /^([0-9]|[a-z])+$/i
+    );
+}
 
 export default function SignUp() {
   const passwordStrengthDescriptions = [
@@ -34,8 +42,10 @@ export default function SignUp() {
 
   const [emailIsValid, setEmailIsValid] = useState(true);
 
+  const [usernameIsValid, setUsernameIsValid] = useState(true);
+
   // https://medium.com/@anthonyzhang220/form-validation-with-material-ui-textfield-component-and-react-29f0f0b26849
-  function handleValidation(e) {
+  function handlePasswordValidation(e) {
     let password = e.target.value;
     let zxcvbn = require('zxcvbn');
     let score = zxcvbn(password).score;
@@ -47,16 +57,19 @@ export default function SignUp() {
     setEmailIsValid(validateEmail(e.target.value));
   }
 
+  function handleUsernameValidation(e) {
+    setUsernameIsValid(validateUsername(e.target.value));
+  }
+
   const handleSubmit = (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
 
     console.log({
+      username: data.get('username'),
       email: data.get('email'),
       password: data.get('password'),
     });
-
-
   };
 
   return (
@@ -78,25 +91,17 @@ export default function SignUp() {
         </Typography>
         <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 3 }}>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12}>
               <TextField
-                autoComplete="given-name"
-                name="firstName"
+                name="username"
                 required
                 fullWidth
-                id="firstName"
-                label="First Name"
+                id="username"
+                label="Username"
                 autoFocus
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                required
-                fullWidth
-                id="lastName"
-                label="Last Name"
-                name="lastName"
-                autoComplete="family-name"
+                autoComplete="username"
+                onChange={(e) => handleUsernameValidation(e)}
+                error={!usernameIsValid}
               />
             </Grid>
             <Grid item xs={12}>
@@ -121,7 +126,7 @@ export default function SignUp() {
                   type="password"
                   id="password"
                   autoComplete="new-password"
-                  onChange={(e) => handleValidation(e)}
+                  onChange={(e) => handlePasswordValidation(e)}
                 />
               </Tooltip>
             </Grid>
