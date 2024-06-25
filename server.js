@@ -6,7 +6,9 @@
 
 // https://www.digitalocean.com/community/tutorials/how-to-handle-passwords-safely-with-bcryptsjs-in-javascript
 const express = require('express');
+
 const cors = require('cors');
+const cookieParser = require('cookie-parser')
 const path = require('path');
 require('dotenv').config();
 
@@ -23,15 +25,35 @@ client.connect();
 const port = 3001;
 const app = express();
 
-const {
-    createAccessToken,
-    createRefreshToken,
-    sendAccessToken,
-    sendRefreshToken
-} = require('./token.js');
-
 app.use(express.json());
-app.use(cors());
+app.use(cookieParser());
+app.use(cors({
+    origin: true,
+    credentials: true
+}));
+
+const { sign } = require('jsonwebtoken');
+
+// I'm pretty sure the email is just dummy data that we need
+// to use for verification (i.e. it could be anything like a user id instead)
+const createAccessToken = (email) => {
+    return sign({ email }, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: '15m'
+    });
+}
+
+const createRefreshToken = (email) => {
+    return sign({ email }, process.env.REFRESH_TOKEN_SECRET, {
+        expiresIn: '7d'
+    });
+};
+
+const sendRefreshToken = (res, refreshToken) => {
+    //res.cookie('refreshToken', refreshToken, {
+    //    httpOnly: true,
+    //    path: '/refreshToken',
+    //});
+};
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random#getting_a_random_integer_between_two_values
 function getRandomInt(min, max) {
@@ -61,18 +83,23 @@ app.post('/api/signin', async (req, res) => {
     const db = client.db('Runway');
     const users = db.collection('Users');
 
+    var accessToken;
+
     let user = await users.findOne({ email: req.body.email });
     // compare user.password (which is hashed) to the hash of the
     // password sent to this API endpoint
     bcrypt.compare(req.body.password, user.password, function (err, res) {
         if (res) {
             console.log('Login successful!');
+            accessToken = createAccessToken(user.email);
+            console.log(accessToken);
+            //refreshToken = createRefreshToken(user.email);
         } else {
             console.log('PERMISSION DENIED');
         }
     });
     console.log(user.email, user.password);
-    let ret = {}
+    let ret = { accessToken: createAccessToken(user.email)};
     res.status(200).json(ret);
 });
 
