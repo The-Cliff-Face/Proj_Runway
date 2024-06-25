@@ -34,6 +34,9 @@ app.use(cors({
     credentials: true
 }));
 
+const { validateEmail } = require('./verification.js');
+const { validateUsername } = require('./verification.js');
+
 const { sign } = require('jsonwebtoken');
 
 // I'm pretty sure the email is just dummy data that we need
@@ -58,18 +61,50 @@ function getRandomInt(min, max) {
 }
 
 app.post('/api/signup', async (req, res) => {
-    // TODO validate format of email and username
+    // input json:
+    // { "username": [ALNUM], "email": "example@site.com", "password": [PLAINTEXT]}
+    // output json:
+    // { "error": [ERROR MESSAGE] }
+
+
+    // TODO check for duplicate usernames/emails
+
+    if (!req.body.username) {
+        res.status(200).json({ error: 'No username provided' });
+        return;
+    }
+    if (!req.body.email) {
+        res.status(200).json({ error: 'No email provided' });
+        return;
+    }
+    if (!req.body.password) {
+        res.status(200).json({ error: 'No password provided' });
+        return;
+    }
+    if (!validateEmail(req.body.email)) {
+        res.status(200).json({ error: 'Invalid email format' });
+        return;
+    }
+    if (!validateUsername(req.body.username)) {
+        res.status(200).json({ error: 'Invalid username format' });
+        return;
+    }
 
     const db = client.db('Runway');
     const users = db.collection('Users');
 
     bcrypt.hash(req.body.password, saltLength, function (err, hash) {
+        if (err) {
+            res.status(200).json({ error: 'Unable to signup new user' });
+            return;
+        }
+
         let newUser = req.body;
         newUser.password = hash;
         newUser.emailIsVerified = false;
         newUser.verificationCode = getRandomInt(1000, 10000);
         users.insertOne(newUser);
-        let ret = {}
+        let ret = { error: '' };
         res.status(200).json(ret);
     });
 });
@@ -94,8 +129,8 @@ app.post('/api/signin', async (req, res) => {
         httpOnly: true,
         path: '/refreshToken',
     });
-        let ret = { accessToken: createAccessToken(user.email) };
-        res.status(200).json(ret);
-    });
+    let ret = { accessToken: createAccessToken(user.email) };
+    res.status(200).json(ret);
+});
 
-    app.listen(port, () => { console.log('app listening'); });
+app.listen(port, () => { console.log('app listening'); });

@@ -15,24 +15,9 @@ import Tooltip from '@mui/material/Tooltip';
 
 import { useState } from 'react';
 
-// https://stackoverflow.com/questions/46155/how-can-i-validate-an-email-address-in-javascript
-const validateEmail = (email) => {
-  return String(email)
-    .toLowerCase()
-    .match(
-      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-    );
-};
+import { validateEmail } from '../../../verification.js';
+import { validateUsername } from '../../../verification.js';
 
-// https://stackoverflow.com/questions/16299036/to-check-if-a-string-is-alphanumeric-in-javascript
-// only allow alphanumeric usernames
-const validateUsername = (username) => {
-  return String(username)
-    .toLowerCase()
-    .match(
-      /^([0-9]|[a-z])+$/i
-    );
-}
 
 export default function SignUp() {
   const passwordStrengthDescriptions = [
