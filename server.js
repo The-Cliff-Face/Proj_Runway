@@ -23,6 +23,13 @@ client.connect();
 const port = 3001;
 const app = express();
 
+const {
+    createAccessToken,
+    createRefreshToken,
+    sendAccessToken,
+    sendRefreshToken
+} = require('./token.js');
+
 app.use(express.json());
 app.use(cors());
 
@@ -34,7 +41,7 @@ function getRandomInt(min, max) {
 }
 
 app.post('/api/signup', async (req, res) => {
-    // validate format of email and username
+    // TODO validate format of email and username
 
     const db = client.db('Runway');
     const users = db.collection('Users');
