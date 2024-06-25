@@ -50,13 +50,6 @@ const createRefreshToken = (email) => {
     });
 };
 
-//const sendRefreshToken = (res, refreshToken) => {
-    //res.cookie('refreshToken', refreshToken, {
-    //    httpOnly: true,
-    //    path: '/refreshToken',
-    //});
-//};
-
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random#getting_a_random_integer_between_two_values
 function getRandomInt(min, max) {
     const minCeiled = Math.ceil(min);
@@ -91,14 +84,18 @@ app.post('/api/signin', async (req, res) => {
     bcrypt.compare(req.body.password, user.password, function (err, res) {
         if (res) {
             console.log('Login successful!');
-            //refreshToken = createRefreshToken(user.email);
         } else {
             console.log('PERMISSION DENIED');
         }
     });
+    refreshToken = createRefreshToken(user.email);
     console.log(user.email, user.password);
-    let ret = { accessToken: createAccessToken(user.email)};
-    res.status(200).json(ret);
-});
+    res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        path: '/refreshToken',
+    });
+        let ret = { accessToken: createAccessToken(user.email) };
+        res.status(200).json(ret);
+    });
 
-app.listen(port, () => { console.log('app listening'); });
+    app.listen(port, () => { console.log('app listening'); });
