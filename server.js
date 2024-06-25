@@ -110,6 +110,12 @@ app.post('/api/signup', async (req, res) => {
 });
 
 app.post('/api/signin', async (req, res) => {
+    // input json:
+    // { "email": "example@site.com", "password": [PLAINTEXT] }
+    // output json:
+    // { "accessToken": "eyJhlkfjdsfudsafi", "error": [ERROR MESSAGE] }
+    // also the refreshToken is returned as an httpOnly cookie in the header
+
     const db = client.db('Runway');
     const users = db.collection('Users');
 
