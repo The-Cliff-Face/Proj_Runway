@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently \"next dev\" \"node server.js\"",
     "build": "next build",
-    "start": "next start",
+    "start": "concurrently \"next start\" \"node server.js\"",
     "lint": "next lint"
   },
   "dependencies": {
@@ -17,6 +17,7 @@
     "@mui/material": "^5.15.20",
     "@mui/material-nextjs": "^5.15.11",
     "bcryptjs": "^2.4.3",
+    "concurrently": "^8.2.2",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

@@ -18,7 +18,6 @@ const bcrypt = require('bcryptjs');
 const saltLength = 8;
 
 const url = process.env.MONGODB_URI;
-console.log(url);
 const MongoClient = require('mongodb').MongoClient;
 const client = new MongoClient(url);
 client.connect();
@@ -130,7 +129,7 @@ app.post('/api/signin', async (req, res) => {
         }
     });
     refreshToken = createRefreshToken(user.email);
-    console.log(user.email, user.password);
+    //console.log(user.email, user.password);
     res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         path: '/refreshToken',
@@ -139,4 +138,4 @@ app.post('/api/signin', async (req, res) => {
     res.status(200).json(ret);
 });
 
-app.listen(port, () => { console.log('app listening'); });
+app.listen(port, () => { console.log(`express backend listening on port ${port}`); });
