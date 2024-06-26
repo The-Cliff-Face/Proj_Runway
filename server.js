@@ -22,8 +22,9 @@ const MongoClient = require('mongodb').MongoClient;
 const client = new MongoClient(url);
 client.connect();
 
-// yes it's bad that this is hardcoded, we will use process.env.PORT or smth on Heroku
+// this is hardcoded because we have to send API requests to some port other than Heroku's default port
 const port = 3001;
+
 const app = express();
 
 app.use(express.json());
