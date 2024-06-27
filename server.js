@@ -11,6 +11,10 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser')
 const path = require('path');
+const next = require('next');
+const { Worker } = require('worker_threads');
+
+//const Engine = require('./search_engine/SearchEngine');
 require('dotenv').config();
 
 // https://www.npmjs.com/package/bcryptjs
@@ -18,15 +22,14 @@ const bcrypt = require('bcryptjs');
 const saltLength = 8;
 
 const url = process.env.MONGODB_URI;
+console.log(url);
 const MongoClient = require('mongodb').MongoClient;
 const client = new MongoClient(url);
 client.connect();
 
-// this is hardcoded because we have to send API requests to some port other than Heroku's default port
+
 const port = 3001;
-
 const app = express();
-
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
@@ -52,6 +55,8 @@ const createRefreshToken = (email) => {
         expiresIn: '7d'
     });
 };
+
+
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random#getting_a_random_integer_between_two_values
 function getRandomInt(min, max) {
@@ -109,6 +114,7 @@ app.post('/api/signup', async (req, res) => {
     });
 });
 
+
 app.post('/api/signin', async (req, res) => {
     // input json:
     // { "email": "example@site.com", "password": [PLAINTEXT] }
@@ -138,5 +144,79 @@ app.post('/api/signin', async (req, res) => {
     let ret = { accessToken: createAccessToken(user.email) };
     res.status(200).json(ret);
 });
+
+
+async function grabClothingData() {
+    const db = client.db("Runway");
+    const collection = db.collection("Clothing");
+    const documents = await collection.find({}).toArray();
+    worker.postMessage({ type: 'start' , task: documents});
+}
+
+
+//https://nodejs.org/api/worker_threads.html
+const worker = new Worker('./search_engine/SearchEngine.js');
+let loadedBool = false;
+grabClothingData();
+
+
+worker.on('message', (msg) => {
+    if (msg.type === 'loaded') {
+        console.log("Search Worker Started");
+        loadedBool = true;
+    }
+
+});
+
+
+
+app.post('/api/spellcheck', async (req, res) => {
+    const { word } = req.body;
+    if (!loadedBool) {
+        res.status(404,{results:[], error:"Not loaded yet"});
+        return
+    }
+    worker.postMessage({ type: 'spellcheck', task:word });
+
+    worker.once('message', (msg) => {
+        if (msg.type === 'spellResult') {
+            ret = msg.result;
+            if (ret=== "") {
+                let ret = {word:"", error:"Closest match not found"}
+                res.status(404,ret);
+                
+            } else {
+                res.status(200).json({results: ret, error:""});
+            }
+            
+        }
+    });
+
+});
+
+
+app.post('/api/search', async (req, res) => {
+    const { search, max_results } = req.body;
+    if (!loadedBool) {
+        res.status(404,{results:[], error:"Not loaded yet"});
+        return
+    }
+    worker.postMessage({ type: 'query', task:{field:search, max_results:max_results} });
+    let ret = {};
+    worker.once('message', (msg) => {
+        if (msg.type === 'queryResult') {
+            ret = msg.result;
+            res.status(200).json({results: ret, error:""});
+        }
+    });
+
+    if (ret.length == 0) {
+        res.status(404).json({results: ret, error:"not found"});
+        return;
+    }
+    
+    
+});
+
 
 app.listen(port, () => { console.log(`express backend listening on port ${port}`); });
