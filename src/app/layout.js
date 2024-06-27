@@ -1,6 +1,9 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 
+import * as React from 'react';
+import { CssBaseline } from '@mui/material';
+
 import AppBar from '@mui/material/AppBar';
 
 // see https://mui.com/material-ui/integrations/nextjs/
@@ -24,6 +27,7 @@ export default function RootLayout({ children }) {
       <body className={inter.className}>
         <AppRouterCacheProvider>
           <ThemeProvider theme={theme}>
+            <CssBaseline />
             <RunwayAppBar />
             {children}
           </ThemeProvider>
