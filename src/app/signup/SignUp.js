@@ -12,7 +12,7 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import Tooltip from '@mui/material/Tooltip';
-
+import { motion } from 'framer-motion';
 import { useState } from 'react';
 
 import { validateEmail } from '../../../verification.js';
@@ -58,81 +58,96 @@ export default function SignUp() {
   };
 
   return (
-    <Container component="main" maxWidth="xs">
-      <CssBaseline />
-      <Box
+    <motion.div
+      initial={{ opacity: 0, y: -60 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 1.0 }}
+    >
+      <Container component="main" maxWidth="xs"
         sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
+          height: '54vh',
+          background: '#000000',
+          boxShadow: '0px 0px 500px rgba(188, 113, 223, 0.6)',
+          marginTop: '10vw',
+          border: '1px solid rgba(188, 113, 223, 1)',
+          boxSizing: 'border-box'
         }}
       >
-        <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
-          <LockOutlinedIcon />
-        </Avatar>
-        <Typography component="h1" variant="h5">
-          Sign up
-        </Typography>
-        <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 3 }}>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <TextField
-                name="username"
-                required
-                fullWidth
-                id="username"
-                label="Username"
-                autoFocus
-                autoComplete="username"
-                onChange={(e) => handleUsernameValidation(e)}
-                error={!usernameIsValid}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                required
-                fullWidth
-                id="email"
-                label="Email Address"
-                name="email"
-                autoComplete="email"
-                onChange={(e) => handleEmailValidation(e)}
-                error={!emailIsValid}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Tooltip title={passwordStrengthDescriptions[passwordStrength]} placement="right" arrow>
+        <CssBaseline />
+        <Box
+          sx={{
+            marginTop: 1.7,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}
+        >
+          <Avatar sx={{ m: 1, bgcolor: 'secondary.main', boxShadow: '0px 0px 20px rgba(188, 113, 223, 0.9)' }}>
+            <LockOutlinedIcon />
+          </Avatar>
+          <Typography component="h1" variant="h5">
+            Sign up
+          </Typography>
+          <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 3 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  name="username"
+                  required
+                  fullWidth
+                  id="username"
+                  label="Username"
+                  autoFocus
+                  autoComplete="username"
+                  onChange={(e) => handleUsernameValidation(e)}
+                  error={!usernameIsValid}
+                />
+              </Grid>
+              <Grid item xs={12}>
                 <TextField
                   required
                   fullWidth
-                  name="password"
-                  label="Password"
-                  type="password"
-                  id="password"
-                  autoComplete="new-password"
-                  onChange={(e) => handlePasswordValidation(e)}
+                  id="email"
+                  label="Email Address"
+                  name="email"
+                  autoComplete="email"
+                  onChange={(e) => handleEmailValidation(e)}
+                  error={!emailIsValid}
                 />
-              </Tooltip>
+              </Grid>
+              <Grid item xs={12}>
+                <Tooltip title={passwordStrengthDescriptions[passwordStrength]} placement="right" arrow>
+                  <TextField
+                    required
+                    fullWidth
+                    name="password"
+                    label="Password"
+                    type="password"
+                    id="password"
+                    autoComplete="new-password"
+                    onChange={(e) => handlePasswordValidation(e)}
+                  />
+                </Tooltip>
+              </Grid>
             </Grid>
-          </Grid>
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-          >
-            Sign Up
-          </Button>
-          <Grid container justifyContent="flex-end">
-            <Grid item>
-              <Link href="../signin" variant="body2">
-                Already have an account? Sign in
-              </Link>
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{ mt: 3, mb: 2 }}
+            >
+              Sign Up
+            </Button>
+            <Grid container justifyContent="flex-end">
+              <Grid item>
+                <Link href="../signin" variant="body2">
+                  Already have an account? Sign in
+                </Link>
+              </Grid>
             </Grid>
-          </Grid>
+          </Box>
         </Box>
-      </Box>
-    </Container>
+      </Container>
+    </motion.div>
   );
 }
