@@ -2,12 +2,13 @@
   "name": "runway",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
+  "main": "server.js",
+	"scripts": {
+		"dev": "concurrently \"next dev\" \"node server.js\"",
+		"build": "next build",
+		"start": "concurrently \"next start\" \"node server.js\"",
+		"lint": "next lint"
+	},
   "dependencies": {
     "@emotion/cache": "^11.11.0",
     "@emotion/react": "^11.11.4",
@@ -17,14 +18,18 @@
     "@mui/material": "^5.15.20",
     "@mui/material-nextjs": "^5.15.11",
     "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "fastest-levenshtein": "^1.0.16",
     "framer-motion": "^11.2.12",
+    "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.7.0",
     "next": "14.2.4",
     "react": "^18",
     "react-dom": "^18",
+    "stopword": "^3.0.1",
     "zxcvbn": "^4.4.2"
   }
 }
