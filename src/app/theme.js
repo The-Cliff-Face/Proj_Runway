@@ -22,11 +22,11 @@ const theme = createTheme({
             main: '#ffffff',
         },
         secondary: {
-            main: '#fc6399',
+            main: '#BC72DF',
         },
         background: {
-            default: '#2a1233',
-            paper: '#2a1233',
+            default: '#1F0E29', //#1F0E29
+            paper: '#1F0E29'
         },
         error: {
             main: '#f64747',
@@ -38,6 +38,9 @@ const theme = createTheme({
             main: '#009fd4',
         },
         success: {
+            main: '#00b16a',
+        },
+        default: {
             main: '#00b16a',
         },
     },

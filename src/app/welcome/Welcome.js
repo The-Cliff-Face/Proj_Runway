@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import styles from "./styles.css";
-import Logo from "/images/RunwayLogo.png";
+import Logo from "/public/RunwayLogo.png";
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import CssBaseline from '@mui/material/CssBaseline';
