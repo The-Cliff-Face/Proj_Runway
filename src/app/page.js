@@ -1,11 +1,17 @@
 import * as React from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-
+import Welcome from './welcome/Welcome';
 export default function Home() {
   return (
     <>
-      <Box maxWidth="sm" sx={{ m: 'auto' }} display="flex">
+      <Welcome/>
+    </>
+  )
+}
+
+/*
+<Box maxWidth="sm" sx={{ m: 'auto' }} display="flex">
         <img src="/RunwayLogo.png" />
       </Box>
 
@@ -15,6 +21,4 @@ export default function Home() {
           Elit duis tristique sollicitudin nibh sit amet commodo. Sit amet luctus venenatis lectus magna fringilla urna porttitor rhoncus. Convallis posuere morbi leo urna molestie at. Quis risus sed vulputate odio ut enim. Lorem ipsum dolor sit amet consectetur adipiscing elit pellentesque. Eget mi proin sed libero enim sed faucibus turpis in. Imperdiet nulla malesuada pellentesque elit eget. Eu non diam phasellus vestibulum lorem sed risus ultricies. Penatibus et magnis dis parturient montes nascetur ridiculus mus mauris. In hendrerit gravida rutrum quisque non tellus orci ac.
         </Typography>
       </Box>
-    </>
-  );
-}
+*/
