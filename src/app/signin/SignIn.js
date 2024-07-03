@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { useState } from 'react';
+import { useContext } from 'react';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -13,13 +15,22 @@ import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import Alert from '@mui/material/Alert';
+import Stack from '@mui/material/Stack';
+
+import { AuthContext } from '/src/app/AuthContext.js';
+
 
 export default function SignIn() {
   const router = useRouter();
-
+  const [showError, willShowError] = useState(false); 
+  const [message, setMessage] = useState(''); 
+  const { setToken } = useContext(AuthContext);
+  var bp = require('/src/app/Path.js');
   const handleSubmit = async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
+
 
     let obj = {
       email: data.get('email'),
@@ -28,7 +39,7 @@ export default function SignIn() {
     let js = JSON.stringify(obj);
 
     const response = await fetch(
-      'http://localhost:3001/api/signin',
+      bp.buildPath('api/signin'),
       {
         method: 'POST',
         body: js,
@@ -37,15 +48,27 @@ export default function SignIn() {
     );
 
     let res = JSON.parse(await response.text());
-    router.push('/home');
+    if (res.hasOwnProperty('accessToken')) {
+      setToken(res.accessToken);
+      router.push('/home');
+    }
+    else {
+      setMessage("Incorrect Email or Password");
+      willShowError(true);
+      console.log("failed login");
+    }
+    
   };
 
   return (
-    <motion.div
+    <Stack direction="column" sx={{justifyContent: 'center'}}>
+      <motion.div
       initial={{ opacity: 0, y: -60 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 1.0 }}
+      sx={{justifyContent: 'center', display: 'flex'}}
     >
+
       <Container component="main" maxWidth="xs"
         sx={{
           height: '52vh',
@@ -71,6 +94,8 @@ export default function SignIn() {
           <Typography component="h1" variant="h5">
             Sign in
           </Typography>
+          
+
           <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
             <TextField
               margin="normal"
@@ -118,7 +143,14 @@ export default function SignIn() {
             </Grid>
           </Box>
         </Box>
+        
       </Container>
+  
     </motion.div>
+    <Container sx={{alignItems: 'flex-start', width: '28%', justifyContent: 'center'}}>
+        {showError ? <Alert sx={{ mt:1, display:'flex' }} variant="outlined" severity="error">{message}</Alert>: <></>}
+      </Container>
+    </Stack>
+    
   );
 }
