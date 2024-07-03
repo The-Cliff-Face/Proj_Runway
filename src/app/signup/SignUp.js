@@ -14,12 +14,13 @@ import Container from '@mui/material/Container';
 import Tooltip from '@mui/material/Tooltip';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-
+import { useRouter } from 'next/navigation';
 import { validateEmail } from '../../../verification.js';
 import { validateUsername } from '../../../verification.js';
 
 
 export default function SignUp() {
+  const router = useRouter();
   const passwordStrengthDescriptions = [
     'very weak', 'weak', 'medium', 'strong', 'very strong'
   ]
@@ -28,6 +29,8 @@ export default function SignUp() {
   const [emailIsValid, setEmailIsValid] = useState(true);
 
   const [usernameIsValid, setUsernameIsValid] = useState(true);
+
+  var bp = require('/src/app/Path.js');
 
   // https://medium.com/@anthonyzhang220/form-validation-with-material-ui-textfield-component-and-react-29f0f0b26849
   function handlePasswordValidation(e) {
@@ -46,7 +49,7 @@ export default function SignUp() {
     setUsernameIsValid(validateUsername(e.target.value));
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
 
@@ -55,6 +58,28 @@ export default function SignUp() {
       email: data.get('email'),
       password: data.get('password'),
     });
+    let object = {};
+    data.forEach((value, key) => {
+      object[key] = value;
+    });
+
+    let js = JSON.stringify(object);
+    console.log(js);
+    const response = await fetch(
+      bp.buildPath('api/signup'),
+      {
+        method: 'POST',
+        body: js,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+    let res = JSON.parse(await response.text());
+    if (res.error === "") {
+      router.push('/home');
+    } else {
+      console.log(res.error);
+    }
+
   };
 
   return (

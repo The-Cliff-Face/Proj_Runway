@@ -16,6 +16,7 @@ import FormControl from '@mui/material/FormControl';
 import TextField from '@mui/material/TextField';
 import SearchLogo from "/public/searchlogo.png";
 import AccountCircle from '@mui/icons-material/AccountCircle';
+import Explore from './tabs/Explore';
 //import IconButton from '@mui/joy/IconButton';
 //import FavoriteBorder from '@mui/icons-material/FavoriteBorder';
 
@@ -131,44 +132,7 @@ export default function Home() {
 
 
       <CustomTabPanel value={value} index={0}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center'}}>
-               <img
-                   src={SearchLogo.src}
-                   loading="lazy"
-                   style={{ width: 32, height: 32, marginRight: 5 }}
-               />
-           <TextField id="input-with-sx" label="Search" variant="standard" />
-        </Box>
-
-        <Box sx={{ display: 'flex', justifyContent: 'center' }}>  {/* Center the ImageList */}
-          <ImageList sx={{ width: 1200, height: 600, gap: 16 }} cols={4} rowHeight={260}>
-            {itemData.map((item) => (
-              <ImageListItem
-                key={item.img}
-                sx={{
-                  margin: 5, // Add margin to create spacing around each image
-                  // boxShadow: '0px 0px 30px rgba(188, 113, 223, 0.6)', // Apply shadow here
-                }}
-              >
-                <img
-                  srcSet={`${item.img}?w=248&fit=crop&auto=format&dpr=2 2x`}
-                  src={`${item.img}?w=248&fit=crop&auto=format`}
-                  alt={item.title}
-                  loading="lazy"
-                  style={{
-                    border: '2px solid rgba(255, 255, 255, 1)',
-                    boxShadow: '0px 0px 30px rgba(255, 255, 255, 0.6)',
-                  }}
-                />
-                <ImageListItemBar
-                  title={item.title}
-                  subtitle={<span>by: {item.author}</span>}
-                  position="below"
-                />
-              </ImageListItem>
-            ))}
-          </ImageList>
-        </Box>
+        <Explore/>
       </CustomTabPanel>
 
 

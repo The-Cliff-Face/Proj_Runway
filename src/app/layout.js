@@ -15,6 +15,7 @@ import theme from './theme.js';
 import RunwayAppBar from './RunwayAppBar.js';
 
 const inter = Inter({ subsets: ["latin"] });
+import { AuthProvider } from './AuthContext.js';
 
 export const metadata = {
   title: "Runway",
@@ -25,6 +26,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={inter.className}>
+        <AuthProvider>
         <AppRouterCacheProvider>
           <ThemeProvider theme={theme}>
             <CssBaseline />
@@ -32,6 +34,7 @@ export default function RootLayout({ children }) {
             {children}
           </ThemeProvider>
         </AppRouterCacheProvider>
+        </AuthProvider>
       </body>
     </html>
   );
