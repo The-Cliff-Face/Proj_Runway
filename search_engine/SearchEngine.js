@@ -145,8 +145,14 @@ parentPort.on('message', (msg) => {
         parentPort.postMessage({ type: 'loaded' });
     } else if (msg.type === 'query') {
         const { field, max_results } = msg.task;
-        const result = engine.search(field,max_results);
-        parentPort.postMessage({ type: 'queryResult', result });
+        if (engine.vectorize_dict.length == 0) {
+            const results = [];
+            parentPort.postMessage({ type: 'queryResult', results });
+        }  else {
+            const result = engine.search(field,max_results);
+            parentPort.postMessage({ type: 'queryResult', result });
+        }
+        
     } else if (msg.type === 'spellcheck') {
         const term = msg.task;
         const result = engine.spellcheck(term);

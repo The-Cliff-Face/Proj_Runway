@@ -13,14 +13,13 @@ const cookieParser = require('cookie-parser')
 const path = require('path');
 const next = require('next');
 const { Worker } = require('worker_threads');
-
+const jwt = require("jsonwebtoken");
 //const Engine = require('./search_engine/SearchEngine');
 require('dotenv').config();
 
 // https://www.npmjs.com/package/bcryptjs
 const bcrypt = require('bcryptjs');
 const saltLength = 8;
-
 const url = process.env.MONGODB_URI;
 console.log(url);
 const MongoClient = require('mongodb').MongoClient;
@@ -39,8 +38,9 @@ app.use(cors({
 
 const { validateEmail } = require('./verification.js');
 const { validateUsername } = require('./verification.js');
-
 const { sign } = require('jsonwebtoken');
+const { KeyboardReturnRounded, KeyboardReturnOutlined } = require('@mui/icons-material');
+const { Truculenta } = require('next/font/google/index.js');
 
 // I'm pretty sure the email is just dummy data that we need
 // to use for verification (i.e. it could be anything like a user id instead)
@@ -73,6 +73,7 @@ app.post('/api/signup', async (req, res) => {
 
 
     // TODO check for duplicate usernames/emails
+    
 
     if (!req.body.username) {
         res.status(200).json({ error: 'No username provided' });
@@ -122,33 +123,55 @@ app.post('/api/signin', async (req, res) => {
     // { "accessToken": "eyJhlkfjdsfudsafi", "error": [ERROR MESSAGE] }
     // also the refreshToken is returned as an httpOnly cookie in the header
 
+    if (!req.body.email) {
+        res.status(200).json({ error: 'No email provided' });
+        return;
+    }
+    if (!req.body.password) {
+        res.status(200).json({ error: 'No password provided' });
+        return;
+    }
+
     const db = client.db('Runway');
     const users = db.collection('Users');
 
     let user = await users.findOne({ email: req.body.email });
+    if (!user) {
+        res.status(200).json({ error: 'No user found!' });
+        return;
+    }
     // compare user.password (which is hashed) to the hash of the
     // password sent to this API endpoint
-    bcrypt.compare(req.body.password, user.password, function (err, res) {
-        if (res) {
+
+    
+    bcrypt.compare(req.body.password, user.password, function (err, bRes) {
+        if (bRes) {
             console.log('Login successful!');
+            refreshToken = createRefreshToken(user.email);
+            //console.log(user.email, user.password);
+            res.cookie('refreshToken', refreshToken, {
+                httpOnly: true,
+                path: '/refreshToken',
+            });
+
+            let ret = { accessToken: createAccessToken(user.email) };
+
+            res.status(200).json(ret);
+            
+            
         } else {
             console.log('PERMISSION DENIED');
+            res.status(200).json({ error: 'No user found!' });
         }
     });
-    refreshToken = createRefreshToken(user.email);
-    //console.log(user.email, user.password);
-    res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        path: '/refreshToken',
-    });
-    let ret = { accessToken: createAccessToken(user.email) };
-    res.status(200).json(ret);
+    
 });
 
 
 async function grabClothingData() {
     const db = client.db("Runway");
     const collection = db.collection("Clothing");
+    console.log("Reading Documents");
     const documents = await collection.find({}).toArray();
     worker.postMessage({ type: 'start' , task: documents});
 }
@@ -156,26 +179,29 @@ async function grabClothingData() {
 
 //https://nodejs.org/api/worker_threads.html
 const worker = new Worker('./search_engine/SearchEngine.js');
-let loadedBool = false;
 grabClothingData();
 
 
 worker.on('message', (msg) => {
     if (msg.type === 'loaded') {
         console.log("Search Worker Started");
-        loadedBool = true;
+        
     }
-
 });
 
 
 
 app.post('/api/spellcheck', async (req, res) => {
     const { word } = req.body;
-    if (!loadedBool) {
-        res.status(404,{results:[], error:"Not loaded yet"});
-        return
+
+    const tokenResult = verifyAndDecodeToken(req);
+    if (typeof tokenResult == "boolean") {
+        res.status(401).json({results: "", error:"token problem"});
+        return;
+    } else {
+        console.log(tokenResult);
     }
+    
     worker.postMessage({ type: 'spellcheck', task:word });
 
     worker.once('message', (msg) => {
@@ -194,13 +220,46 @@ app.post('/api/spellcheck', async (req, res) => {
 
 });
 
-
-app.post('/api/search', async (req, res) => {
-    const { search, max_results } = req.body;
-    if (!loadedBool) {
-        res.status(404,{results:[], error:"Not loaded yet"});
-        return
+/**
+ * Verifies tokens in the req.header
+ * @param {object} req
+ * @returns { Object } False for invalid tokens, Returns Decoded token
+ */
+function verifyAndDecodeToken(req) {
+    if(!req.headers.authorization) {
+        return {"error":"No req auth headers","result":false};
+            
     }
+    const token = req.headers.authorization;
+    if (!token) {
+        return {"error":"no token in req header auth","result":false};
+    }
+    try {
+        const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+        return decodedToken;
+        
+    } catch (error) {
+        return {"error":error,"result":false};
+    }
+
+}
+
+//https://www.geeksforgeeks.org/how-to-implement-jwt-authentication-in-express-js-app/
+app.post('/api/search', async (req, res) => {
+
+    const { search, max_results } = req.body;
+
+    
+    const tokenResult = verifyAndDecodeToken(req);
+    if (tokenResult.hasOwnProperty('error')) {
+        res.status(401).json({results: "", error:tokenResult.error});
+        return;
+    } else {
+        console.log(tokenResult);
+    }
+    
+    
+    //const { search, max_results } = req.body;
     worker.postMessage({ type: 'query', task:{field:search, max_results:max_results} });
     let ret = {};
     worker.once('message', (msg) => {
@@ -209,14 +268,63 @@ app.post('/api/search', async (req, res) => {
             res.status(200).json({results: ret, error:""});
         }
     });
-
     if (ret.length == 0) {
         res.status(404).json({results: ret, error:"not found"});
         return;
     }
     
-    
 });
+
+app.post('/api/postComment', async (req, res) =>  {
+    const { message, id } = req.body;
+
+    const tokenResult = verifyAndDecodeToken(req);
+    if (typeof tokenResult == "boolean") {
+        res.status(401).json({results: "", error:"token problem"});
+        return;
+    } else {
+        console.log(tokenResult);
+    }
+
+    const db = client.db('Runway');
+    const comments = db.collection('comments');
+    let document = await comments.findOne({ id: id});
+    if (!document) {
+        let newDocument = {
+            comments: [message],
+            id: id,
+        }
+        comments.insertOne(newDocument);
+    } else {
+        let cur = document.comments;
+        cur.push(message);
+        comments.updateOne({id:id}, {
+            $set: {'comments': cur},
+        });
+    }
+    res.status(200).json({sucess: "true", error:""});
+
+});
+
+app.post('/api/viewComments', async (req, res) =>  {
+    const { id } = req.body;
+
+    const tokenResult = verifyAndDecodeToken(req);
+    if (typeof tokenResult == "boolean") {
+        res.status(401).json({results: "", error:"token problem"});
+        return;
+    } else {
+        console.log(tokenResult);
+    }
+
+    const db = client.db('Runway');
+    const comments = db.collection('comments');
+    let document = await comments.findOne({ id: id});
+    let ret = {comments: document.comments};
+    res.status(200).json({ret:ret, error:""});
+
+});
+
 
 
 app.listen(port, () => { console.log(`express backend listening on port ${port}`); });
