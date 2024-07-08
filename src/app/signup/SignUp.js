@@ -78,13 +78,13 @@ export default function SignUp() {
       }
     );
     let res = JSON.parse(await response.text());
+
     if (res.error === "") {
-      router.push('/home');
+      setSubmittedForm(true);
     } else {
       console.log(res.error);
     }
 
-    setSubmittedForm(true);
   };
 
   return (

@@ -10,7 +10,7 @@ export default function VerificationBox() {
     }
 
     const handleComplete = (value) => {
-        // TODO
+        // TODO call API endpoint
     };
 
     const handleValidateChar = (value, index) => {
