@@ -18,6 +18,8 @@ import { useRouter } from 'next/navigation';
 import { validateEmail } from '../../../verification.js';
 import { validateUsername } from '../../../verification.js';
 
+import VerificationBox from './VerificationBox.js';
+
 
 export default function SignUp() {
   const router = useRouter();
@@ -29,6 +31,8 @@ export default function SignUp() {
   const [emailIsValid, setEmailIsValid] = useState(true);
 
   const [usernameIsValid, setUsernameIsValid] = useState(true);
+
+  const [submittedForm, setSubmittedForm] = useState(false);
 
   var bp = require('/src/app/Path.js');
 
@@ -80,6 +84,7 @@ export default function SignUp() {
       console.log(res.error);
     }
 
+    setSubmittedForm(true);
   };
 
   return (
@@ -163,12 +168,17 @@ export default function SignUp() {
             >
               Sign Up
             </Button>
-            <Grid container justifyContent="flex-end">
+            <Grid container justifyContent="flex-end" spacing={submittedForm ? 2 : 0}>
               <Grid item>
                 <Link href="../signin" variant="body2">
                   Already have an account? Sign in
                 </Link>
               </Grid>
+              {submittedForm ?
+              <Grid item xs={12}>
+                <VerificationBox />
+              </Grid>
+              : <></>}
             </Grid>
           </Box>
         </Box>
