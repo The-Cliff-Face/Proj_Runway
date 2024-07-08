@@ -42,6 +42,8 @@ const { sign } = require('jsonwebtoken');
 const { KeyboardReturnRounded, KeyboardReturnOutlined } = require('@mui/icons-material');
 const { Truculenta } = require('next/font/google/index.js');
 
+const { sendVerificationEmail } = require('./mailgun.js');
+
 // I'm pretty sure the email is just dummy data that we need
 // to use for verification (i.e. it could be anything like a user id instead)
 const createAccessToken = (email) => {
@@ -109,6 +111,10 @@ app.post('/api/signup', async (req, res) => {
         newUser.password = hash;
         newUser.emailIsVerified = false;
         newUser.verificationCode = getRandomInt(1000, 10000);
+        sendVerificationEmail(
+            newUser.verificationCode,
+            newUser.email
+        );
         users.insertOne(newUser);
         let ret = { error: '' };
         res.status(200).json(ret);
