@@ -1,10 +1,10 @@
-const app_name = 'cop4331-runway-0afcfa4da5a9'
+const app_name = 'projectrunway.tech/';
 exports.buildPath = 
 function buildPath(route)
 {
     if (process.env.NODE_ENV === 'production') 
     {
-        return 'https://' + app_name +  '.herokuapp.com/' + route;
+        return 'https://' + app_name + route;
     }
     else
     {        
