@@ -20,36 +20,60 @@ import SearchLogo from "/public/searchlogo.png";
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import Button from '@mui/material/Button';
 import { AuthContext } from '/src/app/AuthContext.js';
+import './styles.css';
 //import IconButton from '@mui/joy/IconButton';
 //import FavoriteBorder from '@mui/icons-material/FavoriteBorder';
 
 
 
 export default function Explore() {
-    const { token } = useContext(AuthContext);
+    let { token } = useContext(AuthContext);
+    const { setToken } = useContext(AuthContext);
+    const { refreshToken } = useContext(AuthContext);
+
     const max_results = 100;
     //const itemData = [];
     var bp = require('/src/app/Path.js');
     const [searchTerm, setSearch] = useState("");
     const [itemData, setData] = useState([]);
+
+    const truncateTitle = (title) => {
+      if (title.length > 30) {
+        return title.substring(0, 30) + '...';
+      }
+      return title;
+    };
+
+    
+
   
     const search = async event => 
         {
+            if (!token) {
+              const newToken = await refreshToken();
+              setToken(newToken);
+              token = newToken;
+              
+            }
+            
             setData([]);
             event.preventDefault();
             
             var obj = {search:searchTerm,max_results};
             var js = JSON.stringify(obj);
-            console.log(js);
+            
 
             try
             {
-                const response = await fetch(bp.buildPath('api/search'),
+              console.log( token );
+                let response = await fetch(bp.buildPath('api/search'),
                 {method:'POST',body:js , 
                     headers:{
                         'Content-Type': 'application/json',
                         "authorization": token,
                     }});
+                  
+                
     
                 var txt = await response.text();
                 var res = JSON.parse(txt);
@@ -57,7 +81,7 @@ export default function Explore() {
                     console.log(res.error);
                 }
                 var _results = res.results.ret;
-                console.log(_results);
+               
                 var entries = [];
                 for( var i=0; i<_results.length; i++ )
                 {   
@@ -79,7 +103,7 @@ export default function Explore() {
                         "author":product.price,
                     }
                     entries.push(entry);
-                    console.log("run");
+                  
                 }
                 console.log(entries);
                 setData(entries);
@@ -107,7 +131,7 @@ export default function Explore() {
         </Box>
 
         <Box sx={{ display: 'flex', justifyContent: 'center' }}>  {/* Center the ImageList */}
-          <ImageList sx={{ width: 1200, height: 600, gap: 16 }} cols={4} rowHeight={260}>
+          <ImageList sx={{ width: 2400, height: 1200, gap: 0 }} cols={4} rowHeight={343}>
             {itemData.map((item) => (
               <ImageListItem
                 key={item.img}
@@ -117,18 +141,14 @@ export default function Explore() {
                 }}
               >
                 <img
-                  srcSet={`${item.img}?w=248&fit=crop&auto=format&dpr=2 2x`}
-                  src={`${item.img}?w=248&fit=crop&auto=format`}
+                  srcSet={`${item.img}?w=248&fit=scale&auto=format&dpr=2 2x`}
+                  src={`${item.img}?w=248&fit=scale&auto=format`}
                   alt={item.title}
                   loading="lazy"
-                  style={{
-                    border: '2px solid rgba(255, 255, 255, 1)',
-                    boxShadow: '0px 0px 30px rgba(255, 255, 255, 0.6)',
-                  }}
+                  className="responsive-image"
                 />
                 <ImageListItemBar
-                  title={item.title}
-                  subtitle={<span>by: {item.author}</span>}
+                  title={truncateTitle(item.title)}
                   position="below"
                 />
               </ImageListItem>
