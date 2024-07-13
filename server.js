@@ -250,6 +250,25 @@ function verifyAndDecodeToken(req) {
 
 }
 
+app.post('/api/verify_email', async (req, res) => {
+    // input JSON: { email: "asdf@gmail.com", code: XXXX }
+
+    console.log(req.body);
+
+    const db = client.db('Runway');
+    const users = db.collection('Users');
+    let user = await users.findOne({email: req.body.email});
+    console.log(user);
+    if (user && user.verificationCode == req.body.code) {
+        users.updateOne({email: req.body.email},
+            { $set: {"emailIsVerified": true} }
+        );
+        res.status(200).json({error: ""});
+    } else {
+        res.status(401).json({error: "Invalid verification code"});
+    }
+});
+
 //https://www.geeksforgeeks.org/how-to-implement-jwt-authentication-in-express-js-app/
 app.post('/api/search', async (req, res) => {
 
