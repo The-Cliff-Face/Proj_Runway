@@ -18,6 +18,8 @@ import { useRouter } from 'next/navigation';
 import { validateEmail } from '../../../verification.js';
 import { validateUsername } from '../../../verification.js';
 
+import VerificationBox from './VerificationBox.js';
+
 
 export default function SignUp() {
   const router = useRouter();
@@ -27,8 +29,24 @@ export default function SignUp() {
   const [passwordStrength, setPasswordStrength] = useState(0);
 
   const [emailIsValid, setEmailIsValid] = useState(true);
+  const [email, setEmail] = useState('');
 
   const [usernameIsValid, setUsernameIsValid] = useState(true);
+    if (typeof window !== "undefined") {
+        var _ud = window.localStorage.getItem('user_data');
+        var ud = JSON.parse(_ud);
+        if (ud) {
+            var userId = ud.id;
+            var firstName = ud.firstName;
+            var lastName = ud.lastName;
+        } else {
+            var userId = null;
+            var firstName = null;
+            var lastName = null;
+        }
+    }
+
+  const [submittedForm, setSubmittedForm] = useState(false);
 
   var bp = require('/src/app/Path.js');
 
@@ -52,6 +70,7 @@ export default function SignUp() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
+    setEmail(data.get('email'));
 
     console.log({
       username: data.get('username'),
@@ -74,12 +93,12 @@ export default function SignUp() {
       }
     );
     let res = JSON.parse(await response.text());
+
     if (res.error === "") {
-      router.push('/home');
+      setSubmittedForm(true);
     } else {
       console.log(res.error);
     }
-
   };
 
   return (
@@ -163,12 +182,17 @@ export default function SignUp() {
             >
               Sign Up
             </Button>
-            <Grid container justifyContent="flex-end">
+            <Grid container justifyContent="flex-end" spacing={submittedForm ? 2 : 0}>
               <Grid item>
                 <Link href="../signin" variant="body2">
                   Already have an account? Sign in
                 </Link>
               </Grid>
+              {submittedForm ?
+                <Grid item xs={12}>
+                  <VerificationBox email={email}/>
+                </Grid>
+                : <></>}
             </Grid>
           </Box>
         </Box>

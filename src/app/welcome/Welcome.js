@@ -60,7 +60,7 @@ function Welcome() {
           },
         }}
       >
-        <ButtonGroup class="buttonText" variant="text" aria-label="Basic button group">
+        <ButtonGroup className="buttonText" variant="text" aria-label="Basic button group">
           <Button onClick={SignIn}>Login</Button>
           <Button onClick={SignUp}>Signup</Button>
         </ButtonGroup>
