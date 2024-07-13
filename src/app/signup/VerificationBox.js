@@ -1,8 +1,10 @@
 import React from 'react';
+import { useRouter } from 'next/navigation';
 // https://viclafouch.github.io/mui-otp-input/docs/api-reference/
 import { MuiOtpInput } from 'mui-one-time-password-input';
 
 export default function VerificationBox() {
+    const router = useRouter();
     const [otp, setOtp] = React.useState('')
 
     const handleChange = (newValue) => {
@@ -10,7 +12,8 @@ export default function VerificationBox() {
     }
 
     const handleComplete = (value) => {
-        // TODO call API endpoint
+        router.push('/home');
+        let code = Number(value);
     };
 
     const handleValidateChar = (value, index) => {

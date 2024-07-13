@@ -31,6 +31,19 @@ export default function SignUp() {
   const [emailIsValid, setEmailIsValid] = useState(true);
 
   const [usernameIsValid, setUsernameIsValid] = useState(true);
+    if (typeof window !== "undefined") {
+        var _ud = window.localStorage.getItem('user_data');
+        var ud = JSON.parse(_ud);
+        if (ud) {
+            var userId = ud.id;
+            var firstName = ud.firstName;
+            var lastName = ud.lastName;
+        } else {
+            var userId = null;
+            var firstName = null;
+            var lastName = null;
+        }
+    }
 
   const [submittedForm, setSubmittedForm] = useState(false);
 
@@ -175,10 +188,10 @@ export default function SignUp() {
                 </Link>
               </Grid>
               {submittedForm ?
-              <Grid item xs={12}>
-                <VerificationBox />
-              </Grid>
-              : <></>}
+                <Grid item xs={12}>
+                  <VerificationBox />
+                </Grid>
+                : <></>}
             </Grid>
           </Box>
         </Box>
