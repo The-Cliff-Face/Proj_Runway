@@ -38,11 +38,10 @@ app.use(cors({
 
 const { validateEmail } = require('./verification.js');
 const { validateUsername } = require('./verification.js');
-const { sign } = require('jsonwebtoken');
-const { KeyboardReturnRounded, KeyboardReturnOutlined } = require('@mui/icons-material');
-const { Truculenta } = require('next/font/google/index.js');
-
+const { validateRecommendationInput } = require('./verification.js');
 const { sendVerificationEmail } = require('./mailgun.js');
+const { sign } = require('jsonwebtoken');
+
 
 // I'm pretty sure the email is just dummy data that we need
 // to use for verification (i.e. it could be anything like a user id instead)
@@ -121,6 +120,102 @@ app.post('/api/signup', async (req, res) => {
     });
 });
 
+app.post('/api/verify_email', async (req, res) => {
+    // input JSON: { email: "asdf@gmail.com", code: XXXX }
+
+    console.log(req.body);
+
+    const db = client.db('Runway');
+    const users = db.collection('Users');
+    let user = await users.findOne({email: req.body.email});
+    console.log(user);
+    if (user && user.verificationCode == req.body.code) {
+        users.updateOne({email: req.body.email},
+            { $set: {"emailIsVerified": true} }
+        );
+        res.status(200).json({error: ""});
+    } else {
+        res.status(401).json({error: "Invalid verification code"});
+    }
+});
+
+app.post('/api/createProfile', async (req, res) =>  {
+    // input: email and username
+    const tokenResult = verifyAndDecodeToken(req);
+    if (tokenResult.hasOwnProperty('error')) {
+        res.status(401).json({results: "", error:tokenResult.error});
+        return;
+    }
+
+    const {email, username} = req.body;
+    if (!email) {
+        res.status(200).json({results: "", error:"No email provided"});
+    } 
+    if (!username) {
+        res.status(200).json({results: "", error:"No username provided"});
+    }  
+    const db = client.db('Runway');
+    const userProfiles = db.collection('userProfiles');
+    
+    
+    let newUser = req.body;
+    userProfiles.insertOne(newUser);
+    let ret = { ret: newUser, error: '' };
+    res.status(200).json(ret);
+});
+
+app.post('/api/getProfile', async (req, res) =>  {
+    let { email } = req.body;
+    
+
+    const tokenResult = verifyAndDecodeToken(req);
+    if (tokenResult.hasOwnProperty('error')) {
+        res.status(401).json({results: "", error:tokenResult.error});
+        return;
+    }
+   
+    if (!email) { // use tokens instead if no email is provided
+        email = tokenResult.email;   
+    }
+    const db = client.db('Runway');
+    const userProfiles = db.collection('userProfiles');
+    let user = await userProfiles.findOne({"email": email});
+    if (!user) {
+        res.status(200).json({ error: 'No user found!'});
+        return;
+    }
+    res.status(200).json({ res: user.username, error: '' });
+
+});
+
+app.post('/api/updateRecommendations', async (req, res) => {
+    // input: recommandation Matrix
+    const { recommendation } = req.body;
+    if (!recommendation) {
+        res.status(200).json({ error: 'Must supply recommendations!'});
+        return;
+    }
+    if (!validateRecommendationInput(recommendation)) {
+        res.status(200).json({ error: 'Invalid Recommendation Input'});
+        return;
+    }
+
+    const tokenResult = verifyAndDecodeToken(req);
+    if (tokenResult.hasOwnProperty('error')) {
+        res.status(401).json({error:tokenResult.error});
+        return;
+    }
+    const db = client.db('Runway');
+    const userProfiles = db.collection('userProfiles');
+
+    userProfiles.updateOne({"email":tokenResult.email}, {
+        $set: {'recommendations': recommendation},
+    });
+
+    res.status(200).json({message:'Success Updated Document!', error: ''});
+
+});
+
 
 app.post('/api/signin', async (req, res) => {
     // input json:
@@ -149,15 +244,17 @@ app.post('/api/signin', async (req, res) => {
     // compare user.password (which is hashed) to the hash of the
     // password sent to this API endpoint
 
-    
     bcrypt.compare(req.body.password, user.password, function (err, bRes) {
         if (bRes) {
-            console.log('Login successful!');
+            
             refreshToken = createRefreshToken(user.email);
             //console.log(user.email, user.password);
             res.cookie('refreshToken', refreshToken, {
                 httpOnly: true,
-                path: '/refreshToken',
+                path: '/',
+                sameSite: 'strict',
+                maxAge: 60 * 60 * 24 * 7, 
+                //sameSite: 'strict',
             });
 
             let ret = { accessToken: createAccessToken(user.email) };
@@ -173,19 +270,39 @@ app.post('/api/signin', async (req, res) => {
     
 });
 
+app.post('/api/refresh', async (req, res) => {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) return res.sendStatus(401);
+
+    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (error, user) => {
+        if (error) return res.sendStatus(403);
+        const accessToken = { accessToken: createAccessToken(user.email) };
+        res.json(accessToken);
+    });
+});
+
 
 async function grabClothingData() {
     const db = client.db("Runway");
     const collection = db.collection("Clothing");
-    console.log("Reading Documents");
     const documents = await collection.find({}).toArray();
     worker.postMessage({ type: 'start' , task: documents});
+
 }
 
+async function grabClusters() {
+    const db = client.db("Runway");
+    const collection = db.collection("clusters");
+    const documents = await collection.find({}).toArray();
+    recommenderWorker.postMessage({type: 'start', task: documents});
+}
+ 
 
 //https://nodejs.org/api/worker_threads.html
 const worker = new Worker('./search_engine/SearchEngine.js');
 grabClothingData();
+grabClusters();
+const recommenderWorker = new Worker('./search_engine/Recommender.js');
 
 
 worker.on('message', (msg) => {
@@ -195,18 +312,44 @@ worker.on('message', (msg) => {
     }
 });
 
+recommenderWorker.on('message', (msg) => {
+    if (msg.type === 'loaded') {
+        console.log("Recommend Worker Started");
+        
+    }
+});
+
+
+app.post('/api/recommend', async (req, res) => {
+
+    const tokenResult = verifyAndDecodeToken(req);
+    if (tokenResult.hasOwnProperty('error')) {
+        res.status(401).json({results: "", error:tokenResult.error});
+        return;
+    }
+
+    const { recommendation } = req.body;
+    recommenderWorker.postMessage({ type: 'recommend', task: recommendation });
+    recommenderWorker.once('message', (msg) => {
+        if (msg.type === 'recommendResult') {
+            ret = msg.results;
+            res.status(200).json({results: ret, error:""});
+            
+        }
+    });
+
+});
+
 
 
 app.post('/api/spellcheck', async (req, res) => {
     const { word } = req.body;
 
     const tokenResult = verifyAndDecodeToken(req);
-    if (typeof tokenResult == "boolean") {
-        res.status(401).json({results: "", error:"token problem"});
+    if (tokenResult.hasOwnProperty('error')) {
+        res.status(401).json({results: "", error:tokenResult.error});
         return;
-    } else {
-        console.log(tokenResult);
-    }
+    } 
     
     worker.postMessage({ type: 'spellcheck', task:word });
 
@@ -250,25 +393,6 @@ function verifyAndDecodeToken(req) {
 
 }
 
-app.post('/api/verify_email', async (req, res) => {
-    // input JSON: { email: "asdf@gmail.com", code: XXXX }
-
-    console.log(req.body);
-
-    const db = client.db('Runway');
-    const users = db.collection('Users');
-    let user = await users.findOne({email: req.body.email});
-    console.log(user);
-    if (user && user.verificationCode == req.body.code) {
-        users.updateOne({email: req.body.email},
-            { $set: {"emailIsVerified": true} }
-        );
-        res.status(200).json({error: ""});
-    } else {
-        res.status(401).json({error: "Invalid verification code"});
-    }
-});
-
 //https://www.geeksforgeeks.org/how-to-implement-jwt-authentication-in-express-js-app/
 app.post('/api/search', async (req, res) => {
 
@@ -300,29 +424,63 @@ app.post('/api/search', async (req, res) => {
     
 });
 
+app.post('/api/weightedSearch', async (req, res) => {
+
+    const { search, max_results } = req.body;
+
+    
+    const tokenResult = verifyAndDecodeToken(req);
+    if (tokenResult.hasOwnProperty('error')) {
+        res.status(401).json({results: "", error:tokenResult.error});
+        return;
+    }
+    const db = client.db('Runway');
+    const userProfiles = db.collection('userProfiles');
+    let user = await userProfiles.findOne({"email": tokenResult.email});
+    if (!user.recommendations) {
+        res.status(200).json({error:"Invalid User Profile!"});
+    }
+
+    //const { search, max_results } = req.body;
+    worker.postMessage({ type: 'weightedQuery', task:{field:search, max_results:max_results, recommendation: user.recommendations} });
+    let ret = {};
+    worker.once('message', (msg) => {
+        if (msg.type === 'queryWeightedResult') {
+            ret = msg.result;
+            res.status(200).json({results: ret, error:""});
+        }
+    });
+    if (ret.length == 0) {
+        res.status(404).json({results: ret, error:"not found"});
+        return;
+    }
+    
+});
+
 app.post('/api/postComment', async (req, res) =>  {
     const { message, id } = req.body;
 
     const tokenResult = verifyAndDecodeToken(req);
-    if (typeof tokenResult == "boolean") {
-        res.status(401).json({results: "", error:"token problem"});
+    if (tokenResult.hasOwnProperty('error')) {
+        res.status(401).json({results: "", error:tokenResult.error});
         return;
-    } else {
-        console.log(tokenResult);
-    }
+    } 
+    
 
     const db = client.db('Runway');
+    const userProfiles = db.collection('userProfiles');
     const comments = db.collection('comments');
+    const comment = {"message":message, "username":username};
     let document = await comments.findOne({ id: id});
     if (!document) {
         let newDocument = {
-            comments: [message],
+            comments: [comment],
             id: id,
         }
         comments.insertOne(newDocument);
     } else {
         let cur = document.comments;
-        cur.push(message);
+        cur.push(comment);
         comments.updateOne({id:id}, {
             $set: {'comments': cur},
         });
@@ -335,12 +493,10 @@ app.post('/api/viewComments', async (req, res) =>  {
     const { id } = req.body;
 
     const tokenResult = verifyAndDecodeToken(req);
-    if (typeof tokenResult == "boolean") {
-        res.status(401).json({results: "", error:"token problem"});
+    if (tokenResult.hasOwnProperty('error')) {
+        res.status(401).json({results: "", error:tokenResult.error});
         return;
-    } else {
-        console.log(tokenResult);
-    }
+    } 
 
     const db = client.db('Runway');
     const comments = db.collection('comments');
