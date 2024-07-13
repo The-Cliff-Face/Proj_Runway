@@ -17,7 +17,32 @@ const validateUsername = (username) => {
     );
 }
 
+
+
+const validateRecommendationInput = (recommendationMatrix) => {
+  const colors = ["red", "blue", "black", "yellow", "pink", "white", "brown", "green", "purple", "orange", "gray", "teal"];
+  const clothes = ["trousers", "tshirts", "blouses", "dresses", "jeans", "shorts", "tank tops", "skirts", "hoodies", "sweatpants", "sweaters", "coats"];
+  if (!recommendationMatrix || !recommendationMatrix.clothes || !recommendationMatrix.colors) {
+    return false;
+  }
+  
+  for (let i = 0; i<colors.length; i++) {
+    if (!recommendationMatrix.colors.hasOwnProperty(colors[i])) {
+      return false;
+    }
+  }
+
+  for (let i = 0; i<colors.length; i++) {
+    if (!recommendationMatrix.clothes.hasOwnProperty(clothes[i])) {
+      return false;
+    }
+  }
+  return true;
+
+}
+
 module.exports = {
     validateEmail,
-    validateUsername
+    validateUsername,
+    validateRecommendationInput,
 }
