@@ -29,6 +29,7 @@ export default function SignUp() {
   const [passwordStrength, setPasswordStrength] = useState(0);
 
   const [emailIsValid, setEmailIsValid] = useState(true);
+  const [email, setEmail] = useState('');
 
   const [usernameIsValid, setUsernameIsValid] = useState(true);
     if (typeof window !== "undefined") {
@@ -69,6 +70,7 @@ export default function SignUp() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
+    setEmail(data.get('email'));
 
     console.log({
       username: data.get('username'),
@@ -97,7 +99,6 @@ export default function SignUp() {
     } else {
       console.log(res.error);
     }
-
   };
 
   return (
@@ -189,7 +190,7 @@ export default function SignUp() {
               </Grid>
               {submittedForm ?
                 <Grid item xs={12}>
-                  <VerificationBox />
+                  <VerificationBox email={email}/>
                 </Grid>
                 : <></>}
             </Grid>

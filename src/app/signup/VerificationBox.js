@@ -3,7 +3,9 @@ import { useRouter } from 'next/navigation';
 // https://viclafouch.github.io/mui-otp-input/docs/api-reference/
 import { MuiOtpInput } from 'mui-one-time-password-input';
 
-export default function VerificationBox() {
+var bp = require('/src/app/Path.js');
+
+export default function VerificationBox({ email }) {
     const router = useRouter();
     const [otp, setOtp] = React.useState('')
 
@@ -11,13 +13,32 @@ export default function VerificationBox() {
         setOtp(newValue)
     }
 
-    const handleComplete = (value) => {
-        router.push('/home');
+    async function handleComplete(value) {
         let code = Number(value);
+
+        let js = JSON.stringify({ email: email, code: code });
+
+        const response = await fetch(
+            bp.buildPath('api/verify_email'),
+            {
+                method: 'POST',
+                body: js,
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            }
+        );
+        let res = JSON.parse(await response.text());
+
+        if (res.error === "") {
+            router.push('/home');
+        } else {
+            console.log(res.error);
+        }
     };
 
     const handleValidateChar = (value, index) => {
-        let matchIsNumeric  = function(text) {
+        let matchIsNumeric = function (text) {
             const isNumber = typeof text === 'number';
             const isString = typeof text === 'string';
             return (isNumber || (isString && text !== '')) && !isNaN(Number(text));
@@ -31,6 +52,6 @@ export default function VerificationBox() {
             validateChar={handleValidateChar}
             TextFieldsProps={{ size: 'small' }}
             justifyContent="center"
-            />
+        />
     );
 }
