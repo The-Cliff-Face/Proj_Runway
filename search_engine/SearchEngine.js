@@ -61,7 +61,8 @@ class Engine {
                     if (!tfid_vector.hasOwnProperty(word)) {
                         tfid_vector[word] = 0;
                     }
-                    tfid_vector[word] += this.tfid_dict[word];
+                    
+                    tfid_vector[word] = this.tfid_dict[word];
                 }
             });
             this.vectorize_dict.push(tfid_vector);
@@ -76,7 +77,7 @@ class Engine {
         tokens.forEach((word) => {
             if (this.tfid_dict.hasOwnProperty(word)) {
                 if (!term_tfid.hasOwnProperty(word)) {
-                    term_tfid[word] = 1;
+                    term_tfid[word] = this.tfid_dict[word];
                 } else {
                     term_tfid[word] += this.tfid_dict[word];
                 }
@@ -88,6 +89,55 @@ class Engine {
 
         return term_tfid;
     }
+    add(A, B, weight=1) {
+        Object.keys(B).forEach((element) =>  {
+            if (A.hasOwnProperty(element)) {
+                A[element] += weight*(this.tfid_dict[element] * B[element]);
+                console.log(element+ ": " +this.tfid_dict[element]);
+            } else {
+                console.log(element+ ": " +(this.tfid_dict[element]*B[element]));
+                A[element] = weight*(this.tfid_dict[element] * B[element]);
+            }
+        });
+    }
+
+    multiply(A,B, weight=1) {
+        Object.keys(B).forEach((element) =>  {
+            if (A.hasOwnProperty(element)) {
+                A[element] *= weight*(this.tfid_dict[element] * B[element]);
+                console.log(element+ ": " +(this.tfid_dict[element]*B[element]));
+            }
+        });
+
+    }
+
+    weightedSearch(term, max_results, recommendations) {
+        const search_vector = this.tfid_transform(term);
+        this.add(search_vector, recommendations.colors);
+        this.multiply(search_vector, recommendations.clothes);
+
+        let results = [];
+        this.vectorize_dict.forEach((doc_vector, index) => {
+            const score = this.cosine_simularity(search_vector, doc_vector);
+            results.push({ index: index, score: score });
+        });
+        // perform ranking
+        results.sort((a, b) => b.score - a.score);
+
+        let ret = [];
+        let message = "";
+        for (let i =0;i < max_results; i++) {
+            if (results[i].score >= 0.1) {
+                let index = results[i].index;
+                ret.push(this.data[index]);
+            } else {
+                message = "maxed";
+            }
+            
+        }
+        return {ret:ret, message:message};
+    }
+
 
     search(term, max_results) {
         const search_vector = this.tfid_transform(term);
@@ -144,6 +194,7 @@ parentPort.on('message', (msg) => {
         engine.start(msg.task);
         parentPort.postMessage({ type: 'loaded' });
     } else if (msg.type === 'query') {
+        console.log("Running Standard Query!");
         const { field, max_results } = msg.task;
         if (engine.vectorize_dict.length == 0) {
             const results = [];
@@ -157,6 +208,18 @@ parentPort.on('message', (msg) => {
         const term = msg.task;
         const result = engine.spellcheck(term);
         parentPort.postMessage({type: 'spellResult', result });
+
+    } else if (msg.type === 'weightedQuery') {
+        console.log("Running Weighted Query!");
+        const { field, max_results, recommendation } = msg.task;
+        if (engine.vectorize_dict.length == 0) {
+            const results = [];
+            parentPort.postMessage({ type: 'queryWeightedResult', results });
+        }  else {
+            const result = engine.weightedSearch(field,max_results,recommendation);
+            parentPort.postMessage({ type: 'queryWeightedResult', result });
+        }
+
     }
     
 });
