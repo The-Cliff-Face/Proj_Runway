@@ -8,17 +8,25 @@ import Box from '@mui/material/Box';
 import ImageList from '@mui/material/ImageList';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
-//import Box from '@mui/material/Box';
-import Input from '@mui/material/Input';
-import InputLabel from '@mui/material/InputLabel';
-import InputAdornment from '@mui/material/InputAdornment';
-import FormControl from '@mui/material/FormControl';
-import TextField from '@mui/material/TextField';
-import SearchLogo from "/public/searchlogo.png";
-import AccountCircle from '@mui/icons-material/AccountCircle';
+import Popup from 'reactjs-popup';
 import Explore from './tabs/Explore';
-//import IconButton from '@mui/joy/IconButton';
-//import FavoriteBorder from '@mui/icons-material/FavoriteBorder';
+import { motion } from 'framer-motion';
+import heartOutline from "/public/heartOutline.png";
+import heartClicked from "/public/heartClicked.png";
+import { useState } from 'react';
+import { useEffect } from 'react';
+import TextField from '@mui/material/TextField';
+import "./styles.css";
+import Button from '@mui/material/Button';
+import { useTheme } from '@mui/material/styles';
+import MobileStepper from '@mui/material/MobileStepper';
+import Paper from '@mui/material/Paper';
+import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
+import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
+import Carousel from 'react-material-ui-carousel'
+import WhatsHot from './tabs/WhatsHot';
+import ForYou from './tabs/ForYou';
+
 
 
 function CustomTabPanel(props) {
@@ -50,75 +58,48 @@ function a11yProps(index) {
   };
 }
 
-const itemData = [
-  {
-    img: 'https://images.unsplash.com/photo-1551963831-b3b1ca40c98e',
-    title: 'Breakfast',
-    author: '@bkristastucchio',
-  },
-  {
-    img: 'https://images.unsplash.com/photo-1551782450-a2132b4ba21d',
-    title: 'Burger',
-    author: '@rollelflex_graphy726',
-  },
-  {
-    img: 'https://images.unsplash.com/photo-1522770179533-24471fcdba45',
-    title: 'Camera',
-    author: '@helloimnik',
-  },
-  {
-    img: 'https://images.unsplash.com/photo-1558642452-9d2a7deb7f62',
-    title: 'Coffee',
-    author: '@danielcgold',
-  },
-  {
-    img: 'https://images.unsplash.com/photo-1533827432537-70133748f5c8',
-    title: 'Hats',
-    author: '@hjrc33',
-  },
-  {
-    img: 'https://images.unsplash.com/photo-1558642452-9d2a7deb7f62',
-    title: 'Honey',
-    author: '@arwinneil',
-  },
-  {
-    img: 'https://images.unsplash.com/photo-1516802273409-68526ee1bdd6',
-    title: 'Basketball',
-    author: '@tjdragotta',
-  },
-  {
-    img: 'https://images.unsplash.com/photo-1518756131217-31eb79b20e8f',
-    title: 'Fern',
-    author: '@katie_wasserman',
-  },
-  {
-    img: 'https://images.unsplash.com/photo-1597645587822-e99fa5d45d25',
-    title: 'Mushrooms',
-    author: '@silverdalex',
-  },
-  {
-    img: 'https://images.unsplash.com/photo-1567306301408-9b74779a11af',
-    title: 'Tomato basil',
-    author: '@shelleypauls',
-  },
-  {
-    img: 'https://images.unsplash.com/photo-1471357674240-e1a485acb3e1',
-    title: 'Sea star',
-    author: '@peterlaster',
-  },
-  {
-    img: 'https://images.unsplash.com/photo-1589118949245-7d38baf380d6',
-    title: 'Bike',
-    author: '@southside_customs',
-  },
-];
-
 export default function Home() {
   const [value, setValue] = React.useState(0);
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
+
+  const useMousePosition = () => {
+    const [
+      mousePosition,
+      setMousePosition
+    ] = React.useState({ x: null, y: null });
+    React.useEffect(() => {
+      const updateMousePosition = ev => {
+        setMousePosition({ x: ev.clientX, y: ev.clientY });
+      };
+      window.addEventListener('mousemove', updateMousePosition);
+      return () => {
+        window.removeEventListener('mousemove', updateMousePosition);
+      };
+    }, []);
+    return mousePosition;
+  };
+
+  const mousePosition = useMousePosition();
+  
+  const [isClicked, setIsClicked] = useState(false);
+  
+  const handleClick = () => {
+    setIsClicked(!isClicked); 
+  };
+
+  /*
+  useEffect(() => {
+    itemData.forEach((item) => {
+      item.img.forEach((image) => {
+        const img = new Image();
+        img.src = image;
+      });
+    });
+  }, []);
+  */
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -130,75 +111,16 @@ export default function Home() {
         </Tabs>
       </Box>
 
-
       <CustomTabPanel value={value} index={0}>
-        <Explore/>
+        <Explore />
       </CustomTabPanel>
-
 
       <CustomTabPanel value={value} index={1}>
-        <Box sx={{ display: 'flex', justifyContent: 'center' }}>  {/* Center the ImageList */}
-          <ImageList sx={{ width: 1200, height: 650, gap: 16 }} cols={4} rowHeight={260}>
-            {itemData.map((item) => (
-              <ImageListItem
-                key={item.img}
-                sx={{
-                  margin: 5, // Add margin to create spacing around each image
-                  // boxShadow: '0px 0px 30px rgba(188, 113, 223, 0.6)', // Apply shadow here
-                }}
-              >
-                <img
-                  srcSet={`${item.img}?w=248&fit=crop&auto=format&dpr=2 2x`}
-                  src={`${item.img}?w=248&fit=crop&auto=format`}
-                  alt={item.title}
-                  loading="lazy"
-                  style={{
-                    border: '2px solid rgba(188, 113, 223, 1)',
-                    boxShadow: '0px 0px 30px rgba(188, 113, 223, 0.6)',
-                  }}
-                />
-                <ImageListItemBar
-                  title={item.title}
-                  subtitle={<span>by: {item.author}</span>}
-                  position="below"
-                />
-              </ImageListItem>
-            ))}
-          </ImageList>
-        </Box>
+        <ForYou />
       </CustomTabPanel>
 
-
       <CustomTabPanel value={value} index={2}>
-        <Box sx={{ display: 'flex', justifyContent: 'center' }}>  {/* Center the ImageList */}
-          <ImageList sx={{ width: 1200, height: 650, gap: 16 }} cols={4} rowHeight={260}>
-            {itemData.map((item) => (
-              <ImageListItem
-                key={item.img}
-                sx={{
-                  margin: 5, // Add margin to create spacing around each image
-                  // boxShadow: '0px 0px 30px rgba(188, 113, 223, 0.6)', // Apply shadow here
-                }}
-              >
-                <img
-                  srcSet={`${item.img}?w=248&fit=crop&auto=format&dpr=2 2x`}
-                  src={`${item.img}?w=248&fit=crop&auto=format`}
-                  alt={item.title}
-                  loading="lazy"
-                  style={{
-                    border: '2px solid rgba(214, 178, 108, 1)',
-                    boxShadow: '0px 0px 30px rgba(214, 178, 108, 0.6)',
-                  }}
-                />
-                <ImageListItemBar
-                  title={item.title}
-                  subtitle={<span>by: {item.author}</span>}
-                  position="below"
-                />
-              </ImageListItem>
-            ))}
-          </ImageList>
-        </Box>
+        <WhatsHot />
       </CustomTabPanel>
     </Box>
   );
