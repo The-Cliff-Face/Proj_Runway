@@ -8,6 +8,7 @@ import Colors from './quizzes/Colors';
 import Gender from './quizzes/Gender';
 import WelcomeLogin from './WelcomeLogin';
 import { clickedButtons } from './quizzes/Colors';
+import Submission from './quizzes/Submission';
 
 export default function SurveyNav() {
     const [showSurvey, setBool] = useState(false);
@@ -16,8 +17,9 @@ export default function SurveyNav() {
     const [clickedOrder1, setClickedOrder1] = useState([]);
     const [clickedOrder2, setClickedOrder2] = useState([]);
     const [error, setError] = useState('');
+    const [userRes, setRes] = useState({});
     const arrow = ">";
-    const MAX_QUIZ_PAGES = 4;
+    const MAX_QUIZ_PAGES = 5;
 
     let _USER_REC = {
         "recommendations": {
@@ -38,11 +40,6 @@ export default function SurveyNav() {
                 setPageIndex(pageNumber + 1);
             }
         }
-        //console.log("poopy pants");
-        console.log(clickedOrder);
-        console.log(clickedOrder1);
-        console.log(clickedOrder2);
-
         
         let res = {
             "recommendations": {
@@ -79,7 +76,7 @@ export default function SurveyNav() {
             genderOptions.forEach((gender) => {
               res.recommendations.other.gender = clickedOrder2[0];
             });
-
+        setRes(res);
         console.log(res);
 
     };
@@ -93,12 +90,13 @@ export default function SurveyNav() {
                 {pageNumber === 1 && <Colors setClickedOrder={setClickedOrder} />}
                 {pageNumber === 2 && <Clothes setClickedOrder1={setClickedOrder1} />}
                 {pageNumber === 3 && <Gender setClickedOrder2={setClickedOrder2} />}
+                {pageNumber === 4 && <Submission userRes={userRes}/>}
 
 
-                <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" mt={2}>
+                {pageNumber != 4 && <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" mt={2}>
                     {error && <p style={{ color: '#B284CC' }}>{error}</p>}
                     <Button onClick={buttonHandler} variant="outlined">Continue {arrow}</Button>
-                </Box>
+                </Box>}
             
         </>
     );

@@ -1,6 +1,11 @@
 const { stopwords } = require('stopword');
-const { closest } = require('fastest-levenshtein')
+const { closest } = require('fastest-levenshtein');
 const { parentPort } = require('worker_threads');
+const { SVD } = require('svd-js');
+
+var linearAlgebra = require('linear-algebra')(),     
+    Vector = linearAlgebra.Vector,
+    Matrix = linearAlgebra.Matrix;
 
 
 // source: https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html
@@ -11,7 +16,13 @@ class Engine {
         this.tfid_dict = {}; 
         this.vectorize_dict = [];
         this.total_num = 0;
-       
+
+        this.cluster_data = [];
+        this.cluster_count = {};
+        this.cluster_tfid_dict = {};
+        this.cluster_vectorize_dict = [];
+        this.cluster_max_iterations = 100;
+        this.cluster_total_num = 0;
     }
 
     tokenizer(term) {
@@ -24,10 +35,13 @@ class Engine {
         return closest(term,words);
     }
 
-    start(data) {
+    start(data,clusterData) {
         this.data = data;
+        this.cluster_data = clusterData;
         this.preprocess_count();
         this.tfid_fit_transform();
+        this.cluster_preprocess_count();
+        this.cluster_tfid_fit_transform();
     }
     // https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html#sklearn.feature_extraction.text.CountVectorizer
     preprocess_count() { 
@@ -53,9 +67,11 @@ class Engine {
 
     }
     tfid_vectorize() {
+       
         this.data.forEach((item) => {
             const words = this.tokenizer(item.name_processed);
             const tfid_vector = {};
+            
             words.forEach((word) => {
                 if (this.tfid_dict.hasOwnProperty(word)) {
                     if (!tfid_vector.hasOwnProperty(word)) {
@@ -64,7 +80,9 @@ class Engine {
                     
                     tfid_vector[word] = this.tfid_dict[word];
                 }
+
             });
+            
             this.vectorize_dict.push(tfid_vector);
         });
     }
@@ -89,6 +107,7 @@ class Engine {
 
         return term_tfid;
     }
+
     add(A, B, weight=1) {
         Object.keys(B).forEach((element) =>  {
             if (A.hasOwnProperty(element)) {
@@ -111,9 +130,11 @@ class Engine {
 
     }
 
+
     weightedSearch(term, max_results, recommendations) {
         const search_vector = this.tfid_transform(term);
         this.add(search_vector, recommendations.colors);
+        
         this.multiply(search_vector, recommendations.clothes);
 
         let results = [];
@@ -140,7 +161,9 @@ class Engine {
 
 
     search(term, max_results) {
-        const search_vector = this.tfid_transform(term);
+        const newTerm = this.findClosestPairing(term);
+        
+        const search_vector = this.tfid_transform(newTerm + " " + term);
         
         let results = [];
         this.vectorize_dict.forEach((doc_vector, index) => {
@@ -153,7 +176,7 @@ class Engine {
         let ret = [];
         let message = "";
         for (let i =0;i < max_results; i++) {
-            if (results[i].score >= 0.0) {
+            if (results[i].score >= 0.1) {
                 let index = results[i].index;
                 ret.push(this.data[index]);
             } else {
@@ -185,13 +208,129 @@ class Engine {
         
     }
 
+
+    cluster_preprocess_count() { 
+        this.cluster_data.forEach((item) => {
+           let words = item.values;
+            words.forEach((word) => {
+                if (this.cluster_count.hasOwnProperty(word)) {
+                    this.cluster_count[word]+=1;
+                } else {
+                    this.cluster_count[word] = 1;
+                }
+                this.cluster_total_num += 1;
+            });
+        });
+    }
+
+    cluster_tfid_fit_transform() {
+        Object.keys(this.cluster_count).forEach((word) => {
+            this.cluster_tfid_dict[word] = Math.log((this.cluster_total_num+1)/(this.cluster_count[word]+1)) + 1;
+        });
+        this.cluster_tfid_vectorize();
+
+    }
+
+    cluster_tfid_vectorize() {
+        this.cluster_data.forEach((item) => {
+            let words = item.values;
+            const tfid_vector = {};
+            words.forEach((word) => {
+                if (this.cluster_tfid_dict.hasOwnProperty(word)) {
+                    if (!tfid_vector.hasOwnProperty(word)) {
+                        tfid_vector[word] = 0;
+                    }
+                    tfid_vector[word] += this.tfid_dict[word];
+                }
+            });
+            this.cluster_vectorize_dict.push(tfid_vector);
+        });
+    }
+
+    cluster_tfid_transform(term) {
+        const tokens = this.tokenizer(term);
+        const term_tfid = {};
+
+        tokens.forEach((item) => {
+            let word = item;
+            if (this.cluster_tfid_dict.hasOwnProperty(word)) {
+
+                if (!term_tfid.hasOwnProperty(word)) {
+                    term_tfid[word] = this.cluster_tfid_dict[word];
+                } else {
+                    term_tfid[word] += this.cluster_tfid_dict[word];
+                }
+                
+            } else {
+                word = this.spellcheck(word);
+                term_tfid[word] = this.cluster_tfid_dict[word];
+            }
+        });
+        
+        return term_tfid;
+    }
+
+    euclidean(point) {
+        let distances = [];
+
+        this.cluster_vectorize_dict.forEach((row,index) => {
+            const distance = Object.keys(point).reduce((sum, key) => {
+                if (row.hasOwnProperty(key)) {
+                    return sum + (Math.pow(point[key] - row[key],2));
+                }
+                return sum
+            }, 0);
+            distances.push({index:index, score:Math.sqrt(distance)});
+            
+        });
+
+        return distances;
+    }
+
+    findClosestPairing(term) {
+        
+        const vector = this.cluster_tfid_transform(term);
+        let results = [];
+        
+        this.cluster_vectorize_dict.forEach((doc_vector, index) => {
+            const score = this.cosine_simularity(vector, doc_vector);
+            results.push({ index: index, score: score });
+        });
+        
+        //results = this.euclidean(vector);
+        results.sort((a, b) => b.score - a.score);
+        let ret = "";
+        if (results[0].score < 0.1) {
+            return ret;
+        }
+        let index = results[0].index;
+        const cluster = this.cluster_data[index];
+        for (let i = 0;i < cluster.values.length && i<3; i++) {
+            ret+=cluster.values[i];
+            ret+= " "; 
+            
+        }
+        console.log(ret);
+        
+        return ret;
+
+        
+    }
+
+
+
+
+
 }
+
+
 
 const engine = new Engine();
 
 parentPort.on('message', (msg) => {
     if (msg.type === 'start') {
-        engine.start(msg.task);
+        const { documents, clusters } = msg.task;
+        engine.start(documents, clusters);
         parentPort.postMessage({ type: 'loaded' });
     } else if (msg.type === 'query') {
         console.log("Running Standard Query!");

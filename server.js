@@ -43,6 +43,15 @@ const { sendVerificationEmail } = require('./mailgun.js');
 const { sign } = require('jsonwebtoken');
 
 
+
+function remove(arr, value) {
+    var index = arr.indexOf(value);
+    if (index > -1) {
+      arr.splice(index, 1);
+    }
+    return arr;
+  }
+
 // I'm pretty sure the email is just dummy data that we need
 // to use for verification (i.e. it could be anything like a user id instead)
 const createAccessToken = (email) => {
@@ -180,11 +189,16 @@ app.post('/api/getProfile', async (req, res) =>  {
     const db = client.db('Runway');
     const userProfiles = db.collection('userProfiles');
     let user = await userProfiles.findOne({"email": email});
+
     if (!user) {
         res.status(200).json({ error: 'No user found!'});
         return;
     }
-    res.status(200).json({ res: user.username, error: '' });
+    let likes = [];
+    if (user.liked) {
+        likes = user.liked;
+    }
+    res.status(200).json({ res: user.username, likes:likes, error: '' });
 
 });
 
@@ -282,28 +296,24 @@ app.post('/api/refresh', async (req, res) => {
 });
 
 
-async function grabClothingData() {
+
+async function grabData() {
     const db = client.db("Runway");
     const collection = db.collection("Clothing");
     const documents = await collection.find({}).toArray();
-    worker.postMessage({ type: 'start' , task: documents});
+    const clusCol = db.collection("clusters");
+    const clusters = await clusCol.find({}).toArray();
+    worker.postMessage({ type: 'start' , task: {documents, clusters}});
+    recommenderWorker.postMessage({type: 'start', task: clusters});
 
-}
 
-async function grabClusters() {
-    const db = client.db("Runway");
-    const collection = db.collection("clusters");
-    const documents = await collection.find({}).toArray();
-    recommenderWorker.postMessage({type: 'start', task: documents});
 }
  
 
 //https://nodejs.org/api/worker_threads.html
 const worker = new Worker('./search_engine/SearchEngine.js');
-grabClothingData();
-grabClusters();
 const recommenderWorker = new Worker('./search_engine/Recommender.js');
-
+grabData();
 
 worker.on('message', (msg) => {
     if (msg.type === 'loaded') {
@@ -327,8 +337,16 @@ app.post('/api/recommend', async (req, res) => {
         res.status(401).json({results: "", error:tokenResult.error});
         return;
     }
+    const db = client.db('Runway');
+    const userProfiles = db.collection('userProfiles');
+    let user = await userProfiles.findOne({"email": tokenResult.email});
+    if (!user.recommendations) {
+        res.status(200).json({error:"Invalid User Profile!"});
+        return;
+    }
+    console.log(user.recommendations);
 
-    const { recommendation } = req.body;
+    const recommendation = user.recommendations;
     recommenderWorker.postMessage({ type: 'recommend', task: recommendation });
     recommenderWorker.once('message', (msg) => {
         if (msg.type === 'recommendResult') {
@@ -339,7 +357,6 @@ app.post('/api/recommend', async (req, res) => {
     });
 
 });
-
 
 
 app.post('/api/spellcheck', async (req, res) => {
@@ -457,6 +474,99 @@ app.post('/api/weightedSearch', async (req, res) => {
     
 });
 
+
+
+function updateUserLikes(params) {
+    const { id, like, userProfiles, tokenResult, user } = params;
+    if (!user.liked && like>0) {
+        userProfiles.updateOne({"email": tokenResult.email}, {
+            $set: {'liked': [id]},
+        });
+        
+        return true;
+    }
+    let liked = user.liked;
+    if (like > 0) {
+        if (liked.indexOf(like) > 0) {
+            return false;
+        }
+        liked.push(id);
+    } else {
+        remove(liked,id);
+    }
+    userProfiles.updateOne({"email": tokenResult.email}, {
+        $set: {'liked': liked},
+    });
+    return true;
+}
+
+async function updateDocumentLikes(params) {
+    const { id, like, tokenResult, comments,user } = params;
+    
+    let comment = await comments.findOne({ id: id});
+    if (!comment) {
+        let newDocument = {
+            comments: [],
+            id: id,
+            likes: like,
+            usersThatLiked: [user.username],
+        }
+        comments.insertOne(newDocument);
+        return;
+    }
+    if (!comment.likes) {
+        comment.likes = like;
+    } else {
+        comment.likes+=like;
+    }
+    let usersThatLiked = comment.usersThatLiked;
+    if (!usersThatLiked) {
+        usersThatLiked = [];
+    }
+    usersThatLiked.push(user.username);
+    comments.updateOne({id:id}, {
+        $set: {'likes': comment.likes},
+        $set: {'usersThatLiked': usersThatLiked}
+    });
+    
+    
+}
+
+app.post('/api/like', async (req, res) =>  {
+
+    const { id, like } = req.body;
+
+
+    const tokenResult = verifyAndDecodeToken(req);
+    if (tokenResult.hasOwnProperty('error')) {
+        res.status(401).json({results: "", error:tokenResult.error});
+        return;
+    } 
+    
+    const db = client.db('Runway');
+    const userProfiles = db.collection('userProfiles');
+    const comments = db.collection('comments');
+    
+    let user = await userProfiles.findOne({"email": tokenResult.email});
+    if (!user) {
+        res.status(404).json({sucess:"false", error:"Invalid user!"});
+        return;
+    }
+    const params = {id:id, like:like, userProfiles:userProfiles, tokenResult:tokenResult, user:user, comments:comments};
+    const didLike = updateUserLikes(params);
+    if (didLike) {
+        updateDocumentLikes(params);
+    } else {
+        res.status(200).json({sucess: "false", error:"duplicate like"});
+        return;
+    }
+    
+    
+    res.status(200).json({sucess: "true", error:""});
+
+});
+
+
 app.post('/api/postComment', async (req, res) =>  {
     const { message, id } = req.body;
 
@@ -466,16 +576,17 @@ app.post('/api/postComment', async (req, res) =>  {
         return;
     } 
     
-
     const db = client.db('Runway');
     const userProfiles = db.collection('userProfiles');
     const comments = db.collection('comments');
-    const comment = {"message":message, "username":username};
+    let user = await userProfiles.findOne({"email": tokenResult.email});
+    const comment = {"message":message, "username":user.username};
     let document = await comments.findOne({ id: id});
     if (!document) {
         let newDocument = {
             comments: [comment],
             id: id,
+            likes:0,
         }
         comments.insertOne(newDocument);
     } else {
@@ -501,8 +612,21 @@ app.post('/api/viewComments', async (req, res) =>  {
     const db = client.db('Runway');
     const comments = db.collection('comments');
     let document = await comments.findOne({ id: id});
+    if (!document) {
+        let ret = {comments: []};
+        res.status(200).json({ret:ret, error:""});
+        return;
+    }
+    let likes = 0;
+    if (document.likes) {
+        likes = document.likes;
+    } 
+    let usersThatLiked = [];
+    if (document.usersThatLiked) {
+        usersThatLiked = document.usersThatLiked;
+    }
     let ret = {comments: document.comments};
-    res.status(200).json({ret:ret, error:""});
+    res.status(200).json({ret:ret,likes:likes, usersLiked:usersThatLiked, error:""});
 
 });
 

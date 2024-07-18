@@ -20,6 +20,11 @@ class Recommender  {
         this.total_num = 0;
         this.MAX_RESULTS = 3;
 
+        this.synonyms = {
+            "female": ["girl","women", "womens", "womans", "girly"],
+            "male": ["boy", "man", "men", "mens"]
+        };
+
     }
     start(data) {
         this.data = data;
@@ -42,18 +47,18 @@ class Recommender  {
         });
     }
     
-    // could be used but less accurate
+    
     euclidean(point) {
         let distances = [];
 
-        this.data.forEach((row) => {
+        this.cluster_vectorize_dict.forEach((row,index) => {
             const distance = Object.keys(point).reduce((sum, key) => {
                 if (row.hasOwnProperty(key)) {
                     return sum + (Math.pow(point[key] - row[key],2));
                 }
                 return sum
             }, 0);
-            distances.push(Math.sqrt(distance));
+            distances.push({index:index, score:Math.sqrt(distance)});
             
         });
 
@@ -84,17 +89,30 @@ class Recommender  {
         });
         this.tfid_vectorize();
 
+
     }
 
-    tfid_transform(term_tfid, term, type="bool") {
+    add(term_tfid, term, theta) {
         
         Object.keys(term).forEach((word) => {
-            let weight = 0;
-            if (type=="bool") {
-                weight = term[word];
+            if (this.tfid_dict.hasOwnProperty(word)) {
+                if (!term_tfid.hasOwnProperty(word)) {
+                    term_tfid[word] = (this.tfid_dict[word]);
+                } else {
+                    term_tfid[word] += (this.tfid_dict[word]);
+                }
+                
             } else {
-                weight = 1;
+                term_tfid[word] = 0;
             }
+        });
+    }
+
+    tfid_transform(term_tfid, term, theta) {
+        
+        Object.keys(term).forEach((word) => {
+            let weight = term[word];
+            weight*=theta;
             
             if (this.tfid_dict.hasOwnProperty(word)) {
                 if (!term_tfid.hasOwnProperty(word)) {
@@ -131,9 +149,11 @@ class Recommender  {
         // userRec has colors, clothes, and other
         
         const userVector = {};
-        this.tfid_transform(userVector,userRec.clothes);
-        //this.tfid_transform(userVector,userRec.colors);
+        this.tfid_transform(userVector,userRec.clothes,2);
+        this.tfid_transform(userVector,userRec.colors,1);
+        //this.add(userVector,tmp,3);
         //this.tfid_transform(userVector.other,"string");
+        console.log(userVector);
 
         let results = [];
         this.vectorize_dict.forEach((doc_vector, index) => {
@@ -146,8 +166,15 @@ class Recommender  {
         let ret = [];
         for (let i=0;i<this.MAX_RESULTS;i++) {
             let index = results[i].index;
+            let score = results[i].score;
             ret.push(this.data[index]);
+            console.log("---");
+            console.log(score);
+            console.log("---");
+            
+            
         }
+        console.log(ret);
         
         let message = "";
         

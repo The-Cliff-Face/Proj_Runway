@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap');
 
 h2{
@@ -11,8 +12,8 @@ p{
 .responsive-image {
     width: 100%; 
     height: auto; 
-    max-width: 490px;
-    max-height: 343px; 
+    max-width: 15vw;
+    max-height: 15vw; 
     border: 2px solid rgba(255, 255, 255, 1);
     box-shadow: 0px 0px 30px rgba(255, 255, 255, 0.6);
 }

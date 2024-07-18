@@ -16,7 +16,6 @@ import heartClicked from "/public/heartClicked.png";
 import { useState } from 'react';
 import { useEffect } from 'react';
 import TextField from '@mui/material/TextField';
-import "./styles.css";
 import Button from '@mui/material/Button';
 import { useTheme } from '@mui/material/styles';
 import MobileStepper from '@mui/material/MobileStepper';
@@ -26,6 +25,8 @@ import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
 import Carousel from 'react-material-ui-carousel'
 import WhatsHot from './tabs/WhatsHot';
 import ForYou from './tabs/ForYou';
+import { ConnectProvider } from './Connectors';
+import RunwayAppBar from './RunwayAppBar.js';
 
 
 
@@ -90,19 +91,10 @@ export default function Home() {
     setIsClicked(!isClicked); 
   };
 
-  /*
-  useEffect(() => {
-    itemData.forEach((item) => {
-      item.img.forEach((image) => {
-        const img = new Image();
-        img.src = image;
-      });
-    });
-  }, []);
-  */
 
   return (
     <Box sx={{ width: '100%' }}>
+      <RunwayAppBar></RunwayAppBar>
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={value} onChange={handleChange} aria-label="basic tabs example" centered>
           <Tab label="Explore" {...a11yProps(0)} />
@@ -110,7 +102,7 @@ export default function Home() {
           <Tab label="What's Hot" {...a11yProps(2)} />
         </Tabs>
       </Box>
-
+      <ConnectProvider>
       <CustomTabPanel value={value} index={0}>
         <Explore />
       </CustomTabPanel>
@@ -122,6 +114,7 @@ export default function Home() {
       <CustomTabPanel value={value} index={2}>
         <WhatsHot />
       </CustomTabPanel>
+      </ConnectProvider>
     </Box>
   );
 }
