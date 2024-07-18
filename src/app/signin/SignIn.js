@@ -72,10 +72,10 @@ export default function SignIn() {
 
       <Container component="main" maxWidth="xs"
         sx={{
-          height: '52vh',
+          height: '25vw',
           background: '#000000',
-          boxShadow: '0px 0px 500px rgba(188, 113, 223, 0.6)',
-          marginTop: '10vw',
+          boxShadow: '0px 0px 70vw rgba(188, 113, 223, 0.6)',
+          marginTop: '14vw',
           border: '1px solid rgba(188, 113, 223, 1)',
           boxSizing: 'border-box'
         }}

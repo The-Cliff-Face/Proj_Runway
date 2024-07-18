@@ -26,6 +26,7 @@
     "fastest-levenshtein": "^1.0.16",
     "framer-motion": "^11.2.12",
     "jsonwebtoken": "^9.0.2",
+    "linear-algebra": "^3.1.4",
     "mailgun.js": "^10.2.1",
     "mongodb": "^6.7.0",
     "mui-one-time-password-input": "^2.0.3",
@@ -34,7 +35,10 @@
     "nodemailer": "^6.9.14",
     "react": "^18",
     "react-dom": "^18",
+    "react-material-ui-carousel": "^3.4.2",
+    "reactjs-popup": "^2.0.6",
     "stopword": "^3.0.1",
+    "svd-js": "^1.1.1",
     "zxcvbn": "^4.4.2"
   }
 }

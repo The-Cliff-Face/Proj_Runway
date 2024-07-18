@@ -14,7 +14,7 @@ function WelcomeLogin() {
         <React.Fragment>
             <CssBaseline />
         
-            <Container maxWidth="sm" component="main" style={{ height: '100vh', fontFamily: 'Raleway, Arial, sans-serif' }}>
+            <Container maxWidth="sm" component="main" style={{ height: '52vw', fontFamily: 'Raleway, Arial, sans-serif' }}>
                 <Box 
                     display="flex" 
                     flexDirection="column" 

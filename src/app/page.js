@@ -1,7 +1,6 @@
 import * as React from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
 import Welcome from './welcome/Welcome';
+
 export default function Home() {
   return (
     <>

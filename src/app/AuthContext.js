@@ -8,8 +8,26 @@ const AuthContext = createContext();
 // modified to store only access tokens
 const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(null);
+    const [username, setUsername] = useState(null);
 
     var bp = require('/src/app/Path.js');
+
+    const getUsername = async () => {
+      const response = await fetch(bp.buildPath('api/getProfile'), {
+          method: 'POST',
+          headers: { "Content-Type": "application/json",
+            "authorization": token,
+          },
+
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUsername(data.res);
+        return data.res;
+      } else {
+        return null;
+      }
+    }
 
     const refreshToken = async () => {
 
@@ -27,11 +45,15 @@ const AuthProvider = ({ children }) => {
           return null;
       }
   };
+
   
     const value = {
       token,
       setToken,
       refreshToken,
+      username,
+      setUsername,
+      getUsername,
     };
   
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
