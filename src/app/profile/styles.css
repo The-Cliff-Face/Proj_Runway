@@ -7,10 +7,12 @@ h1{
 
 .body2{
     font-family: "Raleway";
+    font-size: 1.11vw;
+    text-decoration: underline;
 }
 
 p{
     font-family: "Raleway";
     text-align: left;
-    
+    color: white;
 }
