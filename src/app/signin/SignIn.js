@@ -25,7 +25,7 @@ export default function SignIn() {
   const router = useRouter();
   const [showError, willShowError] = useState(false); 
   const [message, setMessage] = useState(''); 
-  const { setToken } = useContext(AuthContext);
+  const { setToken, getUsername } = useContext(AuthContext);
   var bp = require('/src/app/Path.js');
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -51,8 +51,10 @@ export default function SignIn() {
     let res = JSON.parse(await response.text());
     if (res.hasOwnProperty('accessToken')) {
       setToken(res.accessToken);
+      await getUsername(res.accessToken);
       router.push('/home');
     }
+
     else {
       setMessage("Incorrect Email or Password");
       willShowError(true);

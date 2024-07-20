@@ -12,10 +12,9 @@ import ForYou from './tabs/ForYou';
 import { ConnectProvider } from './Connectors';
 import RunwayAppBar from './RunwayAppBar.js';
 
-
-
 function CustomTabPanel(props) {
   const { children, value, index, ...other } = props;
+  
 
   return (
     <div
@@ -45,29 +44,10 @@ function a11yProps(index) {
 
 export default function Home() {
   const [value, setValue] = React.useState(0);
-
+  
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
-
-  const useMousePosition = () => {
-    const [
-      mousePosition,
-      setMousePosition
-    ] = React.useState({ x: null, y: null });
-    React.useEffect(() => {
-      const updateMousePosition = ev => {
-        setMousePosition({ x: ev.clientX, y: ev.clientY });
-      };
-      window.addEventListener('mousemove', updateMousePosition);
-      return () => {
-        window.removeEventListener('mousemove', updateMousePosition);
-      };
-    }, []);
-    return mousePosition;
-  };
-
-  const mousePosition = useMousePosition();
   
   const [isClicked, setIsClicked] = useState(false);
   

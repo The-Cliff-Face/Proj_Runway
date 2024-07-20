@@ -2,10 +2,11 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 // https://viclafouch.github.io/mui-otp-input/docs/api-reference/
 import { MuiOtpInput } from 'mui-one-time-password-input';
-
+import { AuthContext } from '../AuthContext';
 var bp = require('/src/app/Path.js');
 
 export default function VerificationBox({ email }) {
+    const { setToken } = React.useContext(AuthContext);
     const router = useRouter();
     const [otp, setOtp] = React.useState('')
 
@@ -31,11 +32,12 @@ export default function VerificationBox({ email }) {
         let res = JSON.parse(await response.text());
 
         if (res.error === "") {
-            router.push('/home');
+            router.push('/signin');
         } else {
             console.log(res.error);
         }
     };
+    
 
     const handleValidateChar = (value, index) => {
         let matchIsNumeric = function (text) {

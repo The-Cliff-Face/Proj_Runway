@@ -23,6 +23,7 @@ export default function ProductPopup({item,
   toggleLike,
   postComment,
   isLiked,
+  setMessage,
   likes,truncateTitle}) {
     
 
@@ -67,7 +68,6 @@ export default function ProductPopup({item,
                   
                     <Box sx={{
                       p: 3, 
-                     
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',

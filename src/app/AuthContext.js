@@ -12,11 +12,16 @@ const AuthProvider = ({ children }) => {
 
     var bp = require('/src/app/Path.js');
 
-    const getUsername = async () => {
+    const getUsername = async (fToken=0) => {
+      if (fToken==0) {
+        fToken = await refreshToken();
+      } 
+      
+      
       const response = await fetch(bp.buildPath('api/getProfile'), {
           method: 'POST',
           headers: { "Content-Type": "application/json",
-            "authorization": token,
+            "authorization": fToken,
           },
 
       });

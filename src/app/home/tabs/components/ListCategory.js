@@ -18,6 +18,7 @@ export default function ListCategory({itemData,comments,popupHandler,
     setExpand,
     whatToExpand,
     setWhatToExpand,
+    setMessage
     
 }) {
     const toClusterName = (clusterArray) => {
@@ -97,6 +98,7 @@ export default function ListCategory({itemData,comments,popupHandler,
                     isLiked={isLiked}
                     likes={likes}
                     truncateTitle={truncateTitle}
+                    setMessage={setMessage}
                     ></ProductPopup>
               ))}
             </ImageList>

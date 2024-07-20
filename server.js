@@ -13,6 +13,7 @@ const cookieParser = require('cookie-parser')
 const path = require('path');
 const next = require('next');
 const { Worker } = require('worker_threads');
+const crypto = require('crypto');
 const jwt = require("jsonwebtoken");
 //const Engine = require('./search_engine/SearchEngine');
 require('dotenv').config();
@@ -132,21 +133,24 @@ app.post('/api/signup', async (req, res) => {
 app.post('/api/verify_email', async (req, res) => {
     // input JSON: { email: "asdf@gmail.com", code: XXXX }
 
-    console.log(req.body);
-
     const db = client.db('Runway');
     const users = db.collection('Users');
     let user = await users.findOne({email: req.body.email});
-    console.log(user);
+    
     if (user && user.verificationCode == req.body.code) {
         users.updateOne({email: req.body.email},
-            { $set: {"emailIsVerified": true} }
+            { 
+                $set: {"emailIsVerified": true},
+                $set: {"tookSurvey": false}
+            }
         );
+        
         res.status(200).json({error: ""});
     } else {
         res.status(401).json({error: "Invalid verification code"});
     }
 });
+
 
 app.post('/api/createProfile', async (req, res) =>  {
     // input: email and username
@@ -172,6 +176,7 @@ app.post('/api/createProfile', async (req, res) =>  {
     let ret = { ret: newUser, error: '' };
     res.status(200).json(ret);
 });
+
 
 app.post('/api/getProfile', async (req, res) =>  {
     let { email } = req.body;
@@ -209,10 +214,13 @@ app.post('/api/updateRecommendations', async (req, res) => {
         res.status(200).json({ error: 'Must supply recommendations!'});
         return;
     }
+    /*
     if (!validateRecommendationInput(recommendation)) {
         res.status(200).json({ error: 'Invalid Recommendation Input'});
+       
         return;
     }
+    */
 
     const tokenResult = verifyAndDecodeToken(req);
     if (tokenResult.hasOwnProperty('error')) {
@@ -284,6 +292,34 @@ app.post('/api/signin', async (req, res) => {
     
 });
 
+app.post('/api/getWhatsHot', async (req, res) => {
+    const tokenResult = verifyAndDecodeToken(req);
+    if (tokenResult.hasOwnProperty('error')) {
+        res.status(401).json({results: "", error:tokenResult.error});
+        return;
+    } 
+    const db = client.db("Runway");
+    const collection = db.collection("comments");
+    const documents = await collection.find({}).toArray();
+    let scores = [];
+    for (let i=0;i<documents.length;i++) {
+        const document = documents[i];
+        if (document.likes) {
+            scores.push({id: document.id, score: document.likes});
+        }
+    }
+    scores.sort((a, b) => b.score - a.score);
+    const clothes = db.collection("Clothing");
+    let ret = [];
+    for (let i=0;i<scores.length;i++) {
+        const item = await clothes.findOne({'id':scores[i].id});
+        ret.push(item);
+    }
+    res.status(200).json({results: ret, error:""});
+
+});
+
+
 app.post('/api/refresh', async (req, res) => {
     const refreshToken = req.cookies.refreshToken;
     if (!refreshToken) return res.sendStatus(401);
@@ -315,10 +351,20 @@ const worker = new Worker('./search_engine/SearchEngine.js');
 const recommenderWorker = new Worker('./search_engine/Recommender.js');
 grabData();
 
+const searchRequestMap = new Map();
 worker.on('message', (msg) => {
     if (msg.type === 'loaded') {
         console.log("Search Worker Started");
-        
+    }
+    if (msg.type && msg.type.startsWith('queryResult+')) {
+        const requestId = msg.type.split('+')[1];
+        const { resolve, reject } = searchRequestMap.get(requestId) || {};
+        if (resolve) {
+            resolve(msg.result);
+            searchRequestMap.delete(requestId);
+        } else {
+            reject(new Error('we lost your req id'));
+        }
     }
 });
 
@@ -344,7 +390,6 @@ app.post('/api/recommend', async (req, res) => {
         res.status(200).json({error:"Invalid User Profile!"});
         return;
     }
-    console.log(user.recommendations);
 
     const recommendation = user.recommendations;
     recommenderWorker.postMessage({ type: 'recommend', task: recommendation });
@@ -423,20 +468,23 @@ app.post('/api/search', async (req, res) => {
     } else {
         console.log(tokenResult);
     }
-    
-    
-    //const { search, max_results } = req.body;
-    worker.postMessage({ type: 'query', task:{field:search, max_results:max_results} });
-    let ret = {};
-    worker.once('message', (msg) => {
-        if (msg.type === 'queryResult') {
-            ret = msg.result;
-            res.status(200).json({results: ret, error:""});
-        }
+    const requestId = crypto.randomUUID(); 
+
+    const resultPromise = new Promise((resolve, reject) => {
+        searchRequestMap.set(requestId, { resolve, reject });
     });
-    if (ret.length == 0) {
-        res.status(404).json({results: ret, error:"not found"});
-        return;
+    
+    worker.postMessage({ type: 'query', task:{id:requestId, field:search, max_results:max_results} });
+    let ret = {};
+    try {
+        const result = await resultPromise;
+        if (result.length > 0) {
+            res.status(200).json({ results: result, error: "" });
+        } else {
+            res.status(404).json({ results: result, error: "not found" });
+        }
+    } catch (error) {
+        res.status(500).json({ results: "", error: error.message });
     }
     
 });

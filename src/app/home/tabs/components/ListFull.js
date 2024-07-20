@@ -17,6 +17,7 @@ export default function ListFull({itemData,comments,popupHandler,
     setExpand,
     whatToExpand,
     setWhatToExpand,
+    setMessage
 }) {
 
   const minimize = () => {
@@ -40,6 +41,7 @@ export default function ListFull({itemData,comments,popupHandler,
                     isLiked={isLiked}
                     likes={likes}
                     truncateTitle={truncateTitle}
+                    setMessage={setMessage}
                     ></ProductPopup>
               ))}
             </ImageList>
