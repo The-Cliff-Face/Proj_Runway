@@ -17,7 +17,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { validateEmail } from '../../../verification.js';
 import { validateUsername } from '../../../verification.js';
-
+import "./styles.css";
 import VerificationBox from './VerificationBox.js';
 
 
