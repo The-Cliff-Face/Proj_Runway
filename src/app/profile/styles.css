@@ -1,5 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap');
 
+body {
+    background-attachment: fixed;
+    font-family: "Raleway";
+    background-image: radial-gradient(#4d2b57, #1F0E29, rgb(0, 0, 0));
+}
+
 h1{
     font-family: "Raleway";
     font-size: 1.11vw;
