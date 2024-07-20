@@ -30,7 +30,7 @@ export default function ListFull({itemData,comments,popupHandler,
         <Box sx={{ display: 'flex', justifyContent: 'center' }}>
             
              
-            <ImageList sx={{ width: '90vw', height: '50vw', gap: 0 }} cols={4} rowHeight={'15vw'}>
+            {typeof itemData !== 'undefined' ? <ImageList sx={{ width: '90vw', height: '50vw', gap: 0 }} cols={4} rowHeight={'15vw'}>
               {itemData.map((item) => (
                     <ProductPopup 
                     item={item} 
@@ -44,7 +44,7 @@ export default function ListFull({itemData,comments,popupHandler,
                     setMessage={setMessage}
                     ></ProductPopup>
               ))}
-            </ImageList>
+            </ImageList>: <></>}
           </Box>
         </>
     );
