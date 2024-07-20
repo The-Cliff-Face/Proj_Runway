@@ -7,7 +7,7 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
 import Divider from '@mui/material/Divider';
-
+import InfoIcon from '@mui/icons-material/Info';
 import HomeIcon from '@mui/icons-material/Home';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
@@ -27,7 +27,8 @@ export default function RunwayAppBar() {
       <AppBar position="static">
         <Toolbar>
           <Button sx={{ mr: 'auto' }} href="/home" startIcon={<HomeIcon />} size="large" color="inherit">Home</Button>
-          <Button href="/" startIcon={<PersonIcon />} size="large" color="inherit">My Profile</Button>
+          <Button href="/profile" startIcon={<PersonIcon />} size="large" color="inherit">My Profile</Button>
+          <Button href="/info" startIcon={<InfoIcon />} size="large" color="inherit">About Us</Button>
           <Button href="/" startIcon={<LogoutIcon />} size="large" color="inherit">Log Out</Button>
         </Toolbar>
       </AppBar>
