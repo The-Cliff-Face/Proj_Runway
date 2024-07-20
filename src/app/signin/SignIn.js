@@ -17,7 +17,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
-
+import "./styles.css";
 import { AuthContext } from '/src/app/AuthContext.js';
 
 
