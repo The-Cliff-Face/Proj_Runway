@@ -2,47 +2,41 @@
 
 
 import * as React from 'react';
-import PropTypes from 'prop-types';
-import Tabs from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
-import ImageList from '@mui/material/ImageList';
-import ImageListItem from '@mui/material/ImageListItem';
-import ImageListItemBar from '@mui/material/ImageListItemBar';
-import Popup from 'reactjs-popup';
-import { motion, useReducedMotion } from 'framer-motion';
-import heartOutline from "/public/heartOutline.png";
-import heartClicked from "/public/heartClicked.png";
 import { useState } from 'react';
-import { useEffect } from 'react';
-import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
-import { useTheme } from '@mui/material/styles';
-import MobileStepper from '@mui/material/MobileStepper';
-import Paper from '@mui/material/Paper';
-import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
-import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
-import Carousel from 'react-material-ui-carousel';
-import { AuthContext } from '/src/app/AuthContext.js';
 import { useContext } from 'react';
-import { useRef } from 'react';
 import './styles.css';
 import ListCategory from './components/ListCategory';
 import ListFull from './components/ListFull';
 import { Connectors } from '/src/app/home/Connectors.js'
+import { useEffect } from 'react';
+import ErrorPopup from './components/ErrorPopup';
+import loader from '/public/loading.gif';
 
 export default function ForYou() {
 
   const { toggleLike, fetchComments, postComment, grabRecommendedClusters, comments } = useContext(Connectors)
-  const { itemData,isLiked,likes,truncateTitle, clusterNames,clusterItemData   } = useContext(Connectors);
-  const [ searchWord, setWord ] = useState(""); 
+  const { isLiked,likes,truncateTitle, clusterNames,clusterItemData,setMessage   } = useContext(Connectors);
   const [ doExpand, setExpand ] = useState(false);
+  const { errorMessage, isErrorPopupOpen, closeErrorPopup  } = useContext(Connectors);
   const [ whatToExpand, setWhatToExpand ] = useState(0);
-     
+  const [ isLoading, setLoading ] = useState(true);
 
   const retrieve = async () => {
-    await grabRecommendedClusters();
+    const re = await grabRecommendedClusters();
+    if (re) {
+      setLoading(false);
+      
+    }
   };
+
+  useEffect(() => {
+    const start = () => {
+      retrieve();
+    };
+    start();
+  }, []);
 
   const popupHandler = async (id) => {
     const dLike = await fetchComments(id);
@@ -56,10 +50,14 @@ export default function ForYou() {
 
    return (
        <>
-       <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center'}}>
-            
-          <Button onClick={retrieve} >Display</Button>
+       <Box sx={{ display: 'flex', alignItems: 'flex-end',align:'center', justifyContent:"center"}}>
+      
+       {isLoading ? <img src={loader.src} alt="loading..." style={{ maxWidth:"15vw", alignSelf: "center"}}/>:<></>}
+       <ErrorPopup message={errorMessage} open={isErrorPopupOpen} onClose={closeErrorPopup} />
        </Box>
+       
+
+       
 
        {!doExpand ? <ListCategory
           itemData={clusterItemData}
@@ -75,6 +73,7 @@ export default function ForYou() {
           setExpand={setExpand}
           whatToExpand = {whatToExpand}
           setWhatToExpand={setWhatToExpand}
+          setMessage={setMessage}
 
        >
        </ListCategory>: <></>}

@@ -19,10 +19,34 @@ class Recommender  {
         this.max_iterations = 100;
         this.total_num = 0;
         this.MAX_RESULTS = 3;
-
+      
+        
         this.synonyms = {
-            "female": ["girl","women", "womens", "womans", "girly"],
-            "male": ["boy", "man", "men", "mens"]
+            "female": ["girl","women", "womens", "womans", "girly", "women", "woman", "girls"],
+            "male": ["boy", "man", "men", "mens", "boys", "manly"],
+            "black": ["dark", "charcoal"],
+            "blue": ["indigo", "sky", "navy"],
+            "red": ["crimson", "maroon"],
+            "yellow": ["gold", "cream", "khaki", "peach", "mustard"],
+            "pink": ["magenta", "rose"],
+            "white": ["light", "cream"],
+            "brown": ["khaki", "nude", "tan", "beige", "coffee", "bronze"],
+            "green": ["lime", "army", "olive", "sage", "jade"],
+            "purple": ["voilet", "lavender", "mauve"],
+            "orange": ["peach", "coral", "bronze"],
+            "gray": ["silver", "grey"],
+            "teal": ["turquoise", "sea", "blue", "green", "jade"],
+            "trousers": ["pants", "corduroy", "bottoms"],
+            "tanks": ["top", "sleeveless", "cami", "camisole", "halter", "halterneck", "tank", "strapless", "spaghetti"],
+            "skirts": ["skirt", "skort"],
+            "shorts": ["skort"],
+            "tshirts": ["tees", "tee", "tshirt"],
+            "jeans": ["denim", "jean"],
+            "dresses": ["dress", "romper", "gown", "maxi", "midi", "jumpsuit"],
+            "hoodies": ["hoodie", "sweatshirt", "hood", "zip up", "fleece", "pullover", "jacket"],
+            "sweaters": ["sweater", "knit", "cardigan", "vest", "wool", "crochet"],
+            "coats": ["coat", "blazer", "suit", "jacket", "winter", "overcoat", "trench"],
+            "blouses": ["flowy", "shirt", "blouse"]
         };
 
     }
@@ -92,18 +116,46 @@ class Recommender  {
 
     }
 
-    add(term_tfid, term, theta) {
+    add(term_tfid, object, theta) {
         
-        Object.keys(term).forEach((word) => {
-            if (this.tfid_dict.hasOwnProperty(word)) {
-                if (!term_tfid.hasOwnProperty(word)) {
-                    term_tfid[word] = (this.tfid_dict[word]);
+        Object.keys(object).forEach((word) => {
+
+            if (word=="gender") {
+                term_tfid[object[word]] = 1 * theta;
+                const gender = object[word];
+                for (let i=0;i<this.synonyms[gender].length;i++) {
+                    const syn = this.synonyms[gender][i];
+
+                    if (!term_tfid.hasOwnProperty(syn) && this.tfid_dict.hasOwnProperty(syn)) {
+                        term_tfid[syn] = theta;
+                    } else if (term_tfid.hasOwnProperty(syn) && this.tfid_dict.hasOwnProperty(syn)) {
+                        term_tfid[syn] += theta;
+                    } else {
+                        term_tfid[syn] = theta;
+                    }
+                }
+                let opposite_word = "";
+                if (gender == "female") {
+                    opposite_word = "male";
                 } else {
-                    term_tfid[word] += (this.tfid_dict[word]);
+                    opposite_word= "female";
                 }
                 
+                for (let i=0;i<this.synonyms[opposite_word].length;i++) {
+                    const syn = this.synonyms[opposite_word][i];
+
+                    if (!term_tfid.hasOwnProperty(syn) && this.tfid_dict.hasOwnProperty(syn)) {
+                        term_tfid[syn] = -100000;
+                    } else if (term_tfid.hasOwnProperty(syn) && this.tfid_dict.hasOwnProperty(syn)) {
+                        term_tfid[syn] += -100000;
+                    } else {
+                        term_tfid[syn] = -100000;
+                    }
+                }
+                 
+
             } else {
-                term_tfid[word] = 0;
+                term_tfid[word] = object[word] * theta;
             }
         });
     }
@@ -112,6 +164,7 @@ class Recommender  {
         
         Object.keys(term).forEach((word) => {
             let weight = term[word];
+            console.log(weight + " : " + word);
             weight*=theta;
             
             if (this.tfid_dict.hasOwnProperty(word)) {
@@ -122,11 +175,27 @@ class Recommender  {
                 }
                 
             } else {
-                term_tfid[word] = 0;
+                term_tfid[word] = weight;
+            }
+
+            if (this.synonyms.hasOwnProperty(word)) {
+                    
+                for (let i=0;i<this.synonyms[word].length;i++) {
+                    const syn = this.synonyms[word][i];
+
+                    if (!term_tfid.hasOwnProperty(syn) && this.tfid_dict.hasOwnProperty(syn)) {
+                        term_tfid[syn] = this.tfid_dict[syn] * weight;
+                    } else if (this.tfid_dict.hasOwnProperty(syn)) {
+                        term_tfid[syn] += this.tfid_dict[syn] * weight;
+                    } else {
+                        term_tfid[syn] = weight;
+                    }
+                }
             }
         });
 
     }
+    
 
     tfid_vectorize() {
         this.data.forEach((item) => {
@@ -145,15 +214,17 @@ class Recommender  {
     }
 
 
+
+
     recommend(userRec) {
         // userRec has colors, clothes, and other
-        
+        console.log(userRec);
         const userVector = {};
-        this.tfid_transform(userVector,userRec.clothes,2);
-        this.tfid_transform(userVector,userRec.colors,1);
-        //this.add(userVector,tmp,3);
-        //this.tfid_transform(userVector.other,"string");
-        console.log(userVector);
+        this.tfid_transform(userVector,userRec.clothes, 1);
+        this.tfid_transform(userVector,userRec.colors,0.5);
+        this.add(userVector, userRec.other, 1);
+        
+        
 
         let results = [];
         this.vectorize_dict.forEach((doc_vector, index) => {
@@ -167,14 +238,9 @@ class Recommender  {
         for (let i=0;i<this.MAX_RESULTS;i++) {
             let index = results[i].index;
             let score = results[i].score;
-            ret.push(this.data[index]);
-            console.log("---");
-            console.log(score);
-            console.log("---");
-            
-            
+            ret.push({data:this.data[index], score:score});
+        
         }
-        console.log(ret);
         
         let message = "";
         

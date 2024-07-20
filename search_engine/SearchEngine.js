@@ -1,11 +1,7 @@
 const { stopwords } = require('stopword');
 const { closest } = require('fastest-levenshtein');
 const { parentPort } = require('worker_threads');
-const { SVD } = require('svd-js');
 
-var linearAlgebra = require('linear-algebra')(),     
-    Vector = linearAlgebra.Vector,
-    Matrix = linearAlgebra.Matrix;
 
 
 // source: https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html
@@ -23,6 +19,36 @@ class Engine {
         this.cluster_vectorize_dict = [];
         this.cluster_max_iterations = 100;
         this.cluster_total_num = 0;
+
+
+        this.synonyms = {
+            "female": ["girl","women", "womens", "womans", "girly", "women", "woman", "girls"],
+            "male": ["boy", "man", "men", "mens", "boys", "manly"],
+            "black": ["dark", "charcoal"],
+            "blue": ["indigo", "sky", "navy"],
+            "red": ["crimson", "maroon"],
+            "yellow": ["gold", "cream", "khaki", "peach", "mustard"],
+            "pink": ["magenta", "rose"],
+            "white": ["light", "cream"],
+            "brown": ["khaki", "nude", "tan", "beige", "coffee", "bronze"],
+            "green": ["lime", "army", "olive", "sage", "jade"],
+            "purple": ["voilet", "lavender", "mauve"],
+            "orange": ["peach", "coral", "bronze"],
+            "gray": ["silver", "grey"],
+            "teal": ["turquoise", "sea", "blue", "green", "jade"],
+            "trousers": ["pants", "corduroy", "bottoms"],
+            "tanks": ["top", "sleeveless", "cami", "camisole", "halter", "halterneck", "tank", "strapless", "spaghetti"],
+            "skirts": ["skirt", "skort"],
+            "shorts": ["skort"],
+            "tshirts": ["tees", "tee", "tshirt"],
+            "jeans": ["denim", "jean"],
+            "dresses": ["dress", "romper", "gown", "maxi", "midi", "jumpsuit"],
+            "hoodies": ["hoodie", "sweatshirt", "hood", "zip up", "fleece", "pullover", "jacket"],
+            "sweaters": ["sweater", "knit", "cardigan", "vest", "wool", "crochet"],
+            "coats": ["coat", "blazer", "suit", "jacket", "winter", "overcoat", "trench"],
+            "blouses": ["flowy", "shirt", "blouse"]
+        };
+
     }
 
     tokenizer(term) {
@@ -159,32 +185,47 @@ class Engine {
         return {ret:ret, message:message};
     }
 
+    filterAndSort(vector, max_r, weight=0.1) {
+        let results = [];
+        let ret = [];
+        this.vectorize_dict.forEach((doc_vector, index) => {
+            const score = this.cosine_simularity(vector, doc_vector);
+            results.push({ index: index, score: score });
+        });
+        results.sort((a, b) => b.score - a.score);
+
+        for (let i =0;i < max_r; i++) {
+            if (results[i].score >= weight) {
+                let index = results[i].index;
+                ret.push(this.data[index]);
+            } 
+        }
+        return ret;
+    }
 
     search(term, max_results) {
         const newTerm = this.findClosestPairing(term);
-        
-        const search_vector = this.tfid_transform(newTerm + " " + term);
-        
-        let results = [];
-        this.vectorize_dict.forEach((doc_vector, index) => {
-            const score = this.cosine_simularity(search_vector, doc_vector);
-            results.push({ index: index, score: score });
-        });
-        // perform ranking
-        results.sort((a, b) => b.score - a.score);
 
-        let ret = [];
-        let message = "";
-        for (let i =0;i < max_results; i++) {
-            if (results[i].score >= 0.1) {
-                let index = results[i].index;
-                ret.push(this.data[index]);
-            } else {
-                message = "maxed";
-            }
-            
+        const search_vector = this.tfid_transform(term);
+        const A = max_results / 2;
+        const B = max_results / 2;
+        const ret = this.filterAndSort(search_vector,A,0.3)
+        
+        const new_vector = this.tfid_transform(newTerm);
+
+        const newRet = this.filterAndSort(new_vector,max_results-ret.length,0.1);
+
+        let combinedRet = [];
+        for (let i=0;i<ret.length;i++) {
+            combinedRet.push(ret[i]);
         }
-        return {ret:ret, message:message};
+        for (let i=0;i<newRet.length;i++) {
+            combinedRet.push(newRet[i]);
+        }
+        
+        let message = "";
+        
+        return {ret:combinedRet, message:message};
     }
 
 
@@ -305,7 +346,7 @@ class Engine {
         }
         let index = results[0].index;
         const cluster = this.cluster_data[index];
-        for (let i = 0;i < cluster.values.length && i<3; i++) {
+        for (let i = 0;i < cluster.values.length && i<10; i++) {
             ret+=cluster.values[i];
             ret+= " "; 
             
@@ -334,13 +375,14 @@ parentPort.on('message', (msg) => {
         parentPort.postMessage({ type: 'loaded' });
     } else if (msg.type === 'query') {
         console.log("Running Standard Query!");
-        const { field, max_results } = msg.task;
+        const { id, field, max_results } = msg.task;
         if (engine.vectorize_dict.length == 0) {
             const results = [];
-            parentPort.postMessage({ type: 'queryResult', results });
+            parentPort.postMessage({ type: `queryResult+${id}`, results });
         }  else {
             const result = engine.search(field,max_results);
-            parentPort.postMessage({ type: 'queryResult', result });
+            console.log('Worker sending results for request ID:', id);
+            parentPort.postMessage({ type: `queryResult+${id}`, result });
         }
         
     } else if (msg.type === 'spellcheck') {

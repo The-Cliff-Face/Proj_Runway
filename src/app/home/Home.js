@@ -5,33 +5,16 @@ import PropTypes from 'prop-types';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
-import ImageList from '@mui/material/ImageList';
-import ImageListItem from '@mui/material/ImageListItem';
-import ImageListItemBar from '@mui/material/ImageListItemBar';
-import Popup from 'reactjs-popup';
 import Explore from './tabs/Explore';
-import { motion } from 'framer-motion';
-import heartOutline from "/public/heartOutline.png";
-import heartClicked from "/public/heartClicked.png";
 import { useState } from 'react';
-import { useEffect } from 'react';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import { useTheme } from '@mui/material/styles';
-import MobileStepper from '@mui/material/MobileStepper';
-import Paper from '@mui/material/Paper';
-import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
-import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
-import Carousel from 'react-material-ui-carousel'
 import WhatsHot from './tabs/WhatsHot';
 import ForYou from './tabs/ForYou';
 import { ConnectProvider } from './Connectors';
 import RunwayAppBar from './RunwayAppBar.js';
 
-
-
 function CustomTabPanel(props) {
   const { children, value, index, ...other } = props;
+  
 
   return (
     <div
@@ -61,29 +44,10 @@ function a11yProps(index) {
 
 export default function Home() {
   const [value, setValue] = React.useState(0);
-
+  
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
-
-  const useMousePosition = () => {
-    const [
-      mousePosition,
-      setMousePosition
-    ] = React.useState({ x: null, y: null });
-    React.useEffect(() => {
-      const updateMousePosition = ev => {
-        setMousePosition({ x: ev.clientX, y: ev.clientY });
-      };
-      window.addEventListener('mousemove', updateMousePosition);
-      return () => {
-        window.removeEventListener('mousemove', updateMousePosition);
-      };
-    }, []);
-    return mousePosition;
-  };
-
-  const mousePosition = useMousePosition();
   
   const [isClicked, setIsClicked] = useState(false);
   

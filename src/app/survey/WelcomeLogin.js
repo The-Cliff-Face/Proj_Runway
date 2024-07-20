@@ -7,9 +7,29 @@ import Container from '@mui/material/Container';
 import "./styles.css";
 import CssBaseline from '@mui/material/CssBaseline';
 import { motion } from 'framer-motion';
-import Head from 'next/head';
+import { AuthContext } from '../AuthContext';
 
 function WelcomeLogin() {
+    let { username, getUsername, setUsername } = React.useContext(AuthContext);
+    const [ localUsername, setLocalUsername] = React.useState("");
+
+    const refresh = () => {
+        if (!username) {
+            username = getUsername();
+            setLocalUsername(username);
+            
+        } else {
+            setLocalUsername(username);
+        }
+    }
+    React.useEffect(() => {
+        const start = () => {
+            refresh();
+        };
+        start();
+      }, []);
+
+    
     return (
         <React.Fragment>
             <CssBaseline />
@@ -42,7 +62,7 @@ function WelcomeLogin() {
                             transition={{ duration: 1.75 }}
                             style={{ fontFamily: 'Raleway' }}
                         >
-                            <p1><strong>Welcome Username!</strong></p1>
+                            <p1><strong>Welcome {localUsername}!</strong></p1>
                             <br></br>
                             <p1>Please take a quick survey to help us personalize your browsing experience on our website.</p1>
                         </motion.div>

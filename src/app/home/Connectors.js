@@ -24,9 +24,12 @@ const ConnectProvider = ({ children }) => {
     const [isLiked, setIsLiked] = useState(false);
     let [likes, setLikes] = useState(0);
     const [itemData, setData] = useState([]);
+    const [ whatisHotData, setWhatisHotData ] = useState([]);
     const [clusterItemData, setClusterData ] = useState([]); 
     const [didILikeIt, setDidI] = useState(false);
     const [clusterNames, setClusterNames] = useState([]);
+    const [isErrorPopupOpen, setIsErrorPopupOpen] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
     //------
 
     // Constants & Other:
@@ -34,6 +37,17 @@ const ConnectProvider = ({ children }) => {
     var bp = require('/src/app/Path.js');
     // ---
 
+
+    
+
+    const handleError = (message="An unexpected error occurred!") => {
+        setErrorMessage(message);
+        setIsErrorPopupOpen(true);
+    };
+
+    const closeErrorPopup = () => {
+        setIsErrorPopupOpen(false);
+    };
     
     const postComment = async (id) => {
         if (!id) return;
@@ -45,6 +59,9 @@ const ConnectProvider = ({ children }) => {
           const newToken = await refreshToken();
           token = newToken;
         }
+        let tmp = comments;
+        tmp.push({username:username, message:msg.message});
+        setComments(tmp);
      
         if (!username) {
           const user = await getUsername();
@@ -69,9 +86,7 @@ const ConnectProvider = ({ children }) => {
         } catch (error) {
           console.log(error);
         }
-        let tmp = comments;
-        tmp.push({username:username, message:msg.message});
-        setComments(tmp);
+        
         msg.e.target.value = "";
      }
 
@@ -206,8 +221,6 @@ const ConnectProvider = ({ children }) => {
                     "authorization": token,
             }});
                   
-                
-    
             var txt = await response.text();
             var res = JSON.parse(txt);
             if (res.error != "") {
@@ -246,16 +259,91 @@ const ConnectProvider = ({ children }) => {
                   
                 }
                 
-                setData(entries);
+                //setData(entries);
                 return entries;
                 
         }
         catch(e)
-        {
+        {   
+            const newToken = await refreshToken();
+            if (newToken) {
+                handleError("Logging In, Using Refresh Token, Try Again");
+            } else {
+                handleError("You are not logged in");
+            }
+            setToken(newToken);
             console.log(e.toString());
             
         }
 
+    };
+
+    const grabWhatsHot = async () => {
+        if (!token) {
+            const newToken = await refreshToken();
+            token = newToken;
+            
+        }
+        setWhatisHotData([]);
+
+
+        try {
+            const response = await fetch(bp.buildPath('api/getWhatsHot'),
+                {method:'POST',
+                    headers:{
+                        'Content-Type': 'application/json',
+                        "authorization": token,
+                }});
+            
+            var txt = await response.text();
+            var res = JSON.parse(txt);
+            if (res.error != "") {
+                console.log(res.error);
+            }
+            var results = res.results;
+            var entries = [];
+            for( var i=0; i<results.length; i++ )
+            {   
+                    
+                const product = results[i];
+                
+                let images = "";
+                if (Array.from(product.images)[0] == '[') {
+                    images = product.images.slice(1, -1).split(',').map(item => item.slice(1, -1));
+                    for (let j=0;j<images.length;j++) {
+                        const temp = images[j];
+                        if (temp[0] == "'") {
+                            let h = temp.split("'");
+                            images[j] = h[1];
+                        }
+                    }
+
+                } else {
+                    images = [product.images];
+                }
+                    
+                const image = images;
+                const entry = {
+                    "img":image,
+                    "title":product.name,
+                    "id":product.id,
+                }
+                entries.push(entry);
+                  
+            }
+            setWhatisHotData(entries);
+            return true;
+
+        } catch (error) {
+            const newToken = await refreshToken();
+            if (newToken) {
+                handleError("Logging In, Using Refresh Token, Try Again");
+                setToken(newToken);
+            } else {
+                handleError("You are not logged in");
+            }
+            console.log(error);
+        }
     };
 
 
@@ -267,6 +355,8 @@ const ConnectProvider = ({ children }) => {
          token = newToken;
          
        }
+       setClusterData([]);
+       setClusterNames([]);
  
         try
             {
@@ -282,12 +372,12 @@ const ConnectProvider = ({ children }) => {
                 if (res.error != "") {
                     console.log(res.error);
                 }
-                console.log(res);
                 
-                let resultantItemData = [];
+                let resultantItemData = [0,0,0];
                 let clusNames = [];
                 for (let i=0;i< 3;i++) {
-                    var _results = res.results.ret[i].values;
+                    var _results = res.results.ret[i].data.values;
+                    
                     clusNames.push(_results);
                     let searchString = "";
                     for( var j=0; j<_results.length; j++ )
@@ -296,17 +386,29 @@ const ConnectProvider = ({ children }) => {
                         searchString += " ";
                         
                     }
-                    const entries = await search(searchString, 10); // modifies itemData
-                    resultantItemData.push(entries);
+                    
+                    const entries = await search(searchString, 10);
+                    resultantItemData[i] = entries;
+                    console.log(entries[0].title + ": "+ searchString);
+                    
 
                 }
                 setClusterNames(clusNames);
                 setClusterData(resultantItemData); 
-                console.log(resultantItemData);
+                return true;
+                
                
             }
             catch(e)
-            {
+            {   
+                const newToken = await refreshToken();
+                if (newToken) {
+                    handleError("Logging In, Using Refresh Token, Try Again");
+                    setToken(newToken);
+                } else {
+                    handleError("You are not logged in");
+                }
+                
                 console.log(e.toString());
                
             }
@@ -330,6 +432,12 @@ const ConnectProvider = ({ children }) => {
         isLiked,
         didILikeIt,
         clusterNames,
+        grabWhatsHot,
+        whatisHotData,
+        errorMessage,
+        handleError,
+        closeErrorPopup,
+        isErrorPopupOpen,
     };
   
     return <Connectors.Provider value={value}>{children}</Connectors.Provider>;
