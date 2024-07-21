@@ -478,7 +478,7 @@ app.post('/api/search', async (req, res) => {
     let ret = {};
     try {
         const result = await resultPromise;
-        if (result.length > 0) {
+        if (result.ret.length > 0) {
             res.status(200).json({ results: result, error: "" });
         } else {
             res.status(404).json({ results: result, error: "not found" });

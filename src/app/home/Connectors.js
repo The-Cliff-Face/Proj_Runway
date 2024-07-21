@@ -59,9 +59,9 @@ const ConnectProvider = ({ children }) => {
           const newToken = await refreshToken();
           token = newToken;
         }
-        let tmp = comments;
-        tmp.push({username:username, message:msg.message});
-        setComments(tmp);
+        let newComments = [...comments];
+        newComments.push({username:username, message:msg.message});
+        setComments(newComments);
      
         if (!username) {
           const user = await getUsername();
