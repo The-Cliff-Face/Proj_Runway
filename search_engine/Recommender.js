@@ -46,7 +46,8 @@ class Recommender  {
             "hoodies": ["hoodie", "sweatshirt", "hood", "zip up", "fleece", "pullover", "jacket"],
             "sweaters": ["sweater", "knit", "cardigan", "vest", "wool", "crochet"],
             "coats": ["coat", "blazer", "suit", "jacket", "winter", "overcoat", "trench"],
-            "blouses": ["flowy", "shirt", "blouse"]
+            "blouses": ["flowy", "shirt", "blouse"],
+            "sweatpants": ["jogger", "joggers", "sweatpant"]
         };
 
     }
@@ -121,50 +122,35 @@ class Recommender  {
         Object.keys(object).forEach((word) => {
 
             if (word=="gender") {
-                term_tfid[object[word]] = 1 * theta;
-                const gender = object[word];
-                for (let i=0;i<this.synonyms[gender].length;i++) {
-                    const syn = this.synonyms[gender][i];
-
-                    if (!term_tfid.hasOwnProperty(syn) && this.tfid_dict.hasOwnProperty(syn)) {
-                        term_tfid[syn] = theta;
-                    } else if (term_tfid.hasOwnProperty(syn) && this.tfid_dict.hasOwnProperty(syn)) {
-                        term_tfid[syn] += theta;
-                    } else {
-                        term_tfid[syn] = theta;
-                    }
-                }
-                let opposite_word = "";
-                if (gender == "female") {
-                    opposite_word = "male";
-                } else {
-                    opposite_word= "female";
-                }
-                
-                for (let i=0;i<this.synonyms[opposite_word].length;i++) {
-                    const syn = this.synonyms[opposite_word][i];
-
-                    if (!term_tfid.hasOwnProperty(syn) && this.tfid_dict.hasOwnProperty(syn)) {
-                        term_tfid[syn] = -100000;
-                    } else if (term_tfid.hasOwnProperty(syn) && this.tfid_dict.hasOwnProperty(syn)) {
-                        term_tfid[syn] += -100000;
-                    } else {
-                        term_tfid[syn] = -100000;
-                    }
-                }
+                // do nothing
                  
+            } else if (this.synonyms.hasOwnProperty(word)) {
+                const weight = theta;
+                term_tfid[word] = object[word] * theta;
+                for (let i=0;i<this.synonyms[word].length;i++) {
+                    const syn = this.synonyms[word][i];
 
+                    if (!term_tfid.hasOwnProperty(syn) && this.tfid_dict.hasOwnProperty(syn)) {
+                        term_tfid[syn] = this.tfid_dict[syn] * weight;
+                    } else if (this.tfid_dict.hasOwnProperty(syn)) {
+                        term_tfid[syn] += this.tfid_dict[syn] * weight;
+                    } else {
+                        term_tfid[syn] = weight;
+                    }
+                }
+
+                
             } else {
                 term_tfid[word] = object[word] * theta;
             }
         });
+
     }
 
     tfid_transform(term_tfid, term, theta) {
         
         Object.keys(term).forEach((word) => {
             let weight = term[word];
-            console.log(weight + " : " + word);
             weight*=theta;
             
             if (this.tfid_dict.hasOwnProperty(word)) {
@@ -213,22 +199,43 @@ class Recommender  {
         });
     }
 
+    combineVectors(vector1, vector2) {
+        let combinedVector = { ...vector1 };
+        for (let key in vector2) {
+            console.log(key);
+          if (combinedVector[key]) {
+            combinedVector[key] += vector2[key];
+          } else {
+            combinedVector[key] = vector2[key];
+          }
+        }
+        return combinedVector;
+      }
 
 
 
     recommend(userRec) {
         // userRec has colors, clothes, and other
-        console.log(userRec);
-        const userVector = {};
-        this.tfid_transform(userVector,userRec.clothes, 1);
-        this.tfid_transform(userVector,userRec.colors,0.5);
-        this.add(userVector, userRec.other, 1);
+        let userVector = {};
         
+        this.tfid_transform(userVector,userRec.clothes, 2.5);
+        this.tfid_transform(userVector,userRec.colors, 1);
+        let newVector = {};
+        this.add(newVector, userRec.other, 2);
         
+        let combinedVector = this.combineVectors(userVector, newVector);
+        
+        try {
+            const r = this.vectorize_dict[6];
 
+        } catch (error) {
+            return {ret:[], message:"failed"};
+        }
+        console.log(combinedVector);
+        
         let results = [];
         this.vectorize_dict.forEach((doc_vector, index) => {
-            const score = this.cosine_simularity(userVector, doc_vector);
+            const score = this.cosine_simularity(combinedVector, doc_vector);
             results.push({ index: index, score: score });
         });
         // perform ranking
@@ -239,7 +246,6 @@ class Recommender  {
             let index = results[i].index;
             let score = results[i].score;
             ret.push({data:this.data[index], score:score});
-        
         }
         
         let message = "";
@@ -251,13 +257,29 @@ class Recommender  {
 }
 
 const Engine = new Recommender();
+const female_engine = new Recommender();
+const male_engine = new Recommender();
+
 parentPort.on('message', (msg) => {
     if (msg.type == "start") {
-        Engine.start(msg.task);
+        const { clusters, male_clusters_data, female_cluster_data } = msg.task;
+        Engine.start(clusters);
+        female_engine.start(female_cluster_data);
+        male_engine.start(male_clusters_data);
         parentPort.postMessage({ type: 'loaded' });
+
     } else if (msg.type == "recommend") {
-        const results = Engine.recommend(msg.task);
-        parentPort.postMessage({ type: 'recommendResult', results });
+        const { rec, type } = msg.task;
+        if (type == "female") {
+            const results = female_engine.recommend(rec);
+            parentPort.postMessage({ type: 'recommendResult', results });
+        } else if (type == "male") {
+            const results = male_engine.recommend(rec);
+            parentPort.postMessage({ type: 'recommendResult', results });
+        } else {
+            const results = Engine.recommend(rec);
+            parentPort.postMessage({ type: 'recommendResult', results });
+        }
         
     }
    
