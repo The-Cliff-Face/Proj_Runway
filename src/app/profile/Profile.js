@@ -13,7 +13,8 @@ import { motion } from 'framer-motion';
 import Stack from '@mui/material/Stack';
 import appicon1 from "/public/appicon1.png";
 import Button from '@mui/material/Button';
-import { AuthContext } from '/src/app/AuthContext.js';
+//import { AuthContext } from '/src/app/AuthContext.js';
+import { AuthContext } from '../AuthContext';
 import Popup from 'reactjs-popup';
 import heartClicked from "/public/heartClicked.png";
 import surveyIcon from "/public/surveyIcon.png";
@@ -27,8 +28,26 @@ export default function Profile() {
   let { token } = useContext(AuthContext);
   const { setToken } = useContext(AuthContext);
   const { refreshToken } = useContext(AuthContext);
-
   const [open, setOpen] = useState(false);
+  let { username, getUsername, setUsername } = React.useContext(AuthContext);
+  const [ localUsername, setLocalUsername] = React.useState("");
+
+  const refresh = () => {
+    if (!username) {
+      username = getUsername();
+      setLocalUsername(username);
+            
+    } else {
+      setLocalUsername(username);
+    }
+  }
+
+  React.useEffect(() => {
+    const start = () => {
+        refresh();
+    };
+    start();
+  }, []);
 
   const grabProfile = async event => {
     if (!token) {
@@ -91,7 +110,7 @@ export default function Profile() {
             />
 
             <Typography component="h1" variant="h5" className="h1">
-              Your Name
+              {localUsername}
             </Typography>
 
             <br></br>

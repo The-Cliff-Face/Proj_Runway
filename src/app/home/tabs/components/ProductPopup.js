@@ -13,8 +13,7 @@ import Carousel from 'react-material-ui-carousel';
 import Paper from '@mui/material/Paper';
 import heartOutline from "/public/heartOutline.png";
 import heartClicked from "/public/heartClicked.png";
-
-
+import { motion } from 'framer-motion';
 
 
 export default function ProductPopup({item,
@@ -24,7 +23,11 @@ export default function ProductPopup({item,
   postComment,
   isLiked,
   setMessage,
-  likes,truncateTitle}) {
+  likes,
+  truncateTitle,
+  borderColor,
+  shadowColor
+  }) {
     
 
     return (
@@ -45,8 +48,8 @@ export default function ProductPopup({item,
                         loading="lazy"
                         className="responsive-image"
                         style={{
-                           border: '2px solid rgba(188, 113, 223, 1)',
-                           boxShadow: '0px 0px 30px rgba(188, 113, 223, 0.6)',
+                          border: `2px solid ${borderColor}`,
+                          boxShadow: `0px 0px 30px ${shadowColor}`,
                         }}
                         
                         onClick={() => popupHandler(item.id)}
@@ -64,7 +67,14 @@ export default function ProductPopup({item,
                   modal
                   nested
                 >
+                  
                   {close => (
+
+                    <motion.div
+                    initial={{ opacity: 0, y: -80 }}
+                    animate={{ opacity: 1, y: 0}}
+                    transition={{ duration: 1.5 }}
+                    >
                   
                     <Box sx={{
                       p: 3, 
@@ -76,8 +86,8 @@ export default function ProductPopup({item,
                       overflowY: 'auto', //scroll
                       backgroundColor: 'black',
                       color: 'white',
-                      boxShadow: '0px 0px 500px rgba(188, 113, 223, 0.6)',
-                       border: '2px solid rgba(188, 113, 223, 1)',
+                      boxShadow: `0px 0px 500px ${shadowColor}`,
+                      border: `2px solid ${borderColor}`,
                       position: 'relative'
                     }}>
                      
@@ -149,9 +159,14 @@ export default function ProductPopup({item,
                           </Button>
                       </Box>
                     </Box>
+
+                    </motion.div>
+
+                  
                   
                   )}
                 </Popup>
+              
         </>
     );
 

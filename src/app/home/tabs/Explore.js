@@ -11,6 +11,7 @@ import './styles.css';
 import { Connectors } from '/src/app/home/Connectors.js';
 import ListFull from './components/ListFull';
 import ErrorPopup from './components/ErrorPopup';
+import { motion } from 'framer-motion';
 
 
 export default function Explore() {
@@ -56,26 +57,31 @@ export default function Explore() {
                />
            <TextField id="input-with-sx" label="Search" variant="standard"  onChange={(e) => { setWord(e.target.value); }}/>
            <Button onClick={() => searchWrapper(searchWord)} >Search</Button>
-
         </Box>
-        <ErrorPopup message={errorMessage} open={isErrorPopupOpen} onClose={closeErrorPopup} />
-        <ListFull
-          itemData={itemData}
-          comments={comments}
-          toggleLike={toggleLike}
-          popupHandler={popupHandler}
-          postComment={postComment}
-          isLiked={isLiked}
-          likes={likes}
-          truncateTitle={truncateTitle}
-          isExpanded={false}
-          setMessage={setMessage}
-        >
-        </ListFull>
 
+        <ErrorPopup message={errorMessage} open={isErrorPopupOpen} onClose={closeErrorPopup} />
 
         
-          </>
+        
+          <ListFull
+            itemData={itemData}
+            comments={comments}
+            toggleLike={toggleLike}
+            popupHandler={popupHandler}
+            postComment={postComment}
+            isLiked={isLiked}
+            likes={likes}
+            truncateTitle={truncateTitle}
+            isExpanded={false}
+            setMessage={setMessage}
+            borderColor="rgba(255, 255, 255, 1)"
+            shadowColor="rgba(255, 255, 255, 0.6)"
+
+          >
+          </ListFull>
+        
+        
+      </>
         
     );
 }

@@ -13,6 +13,7 @@ import { Connectors } from '/src/app/home/Connectors.js'
 import { useEffect } from 'react';
 import ErrorPopup from './components/ErrorPopup';
 import loader from '/public/loading.gif';
+import { motion } from 'framer-motion';
 
 export default function ForYou() {
 
@@ -51,14 +52,16 @@ export default function ForYou() {
    return (
        <>
        <Box sx={{ display: 'flex', alignItems: 'flex-end',align:'center', justifyContent:"center"}}>
-      
-       {isLoading ? <img src={loader.src} alt="loading..." style={{ maxWidth:"15vw", alignSelf: "center"}}/>:<></>}
-       <ErrorPopup message={errorMessage} open={isErrorPopupOpen} onClose={closeErrorPopup} />
+          {isLoading ? <img src={loader.src} alt="loading..." style={{ maxWidth:"15vw", alignSelf: "center"}}/>:<></>}
+          <ErrorPopup message={errorMessage} open={isErrorPopupOpen} onClose={closeErrorPopup} />
        </Box>
-       
 
-       
-
+       <motion.div
+        initial={{ opacity: 0, y: -60 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 2.5 }}
+        sx={{ justifyContent: 'center', display: 'flex' }}
+      >
        {!doExpand ? <ListCategory
           itemData={clusterItemData}
           comments={comments}
@@ -74,9 +77,11 @@ export default function ForYou() {
           whatToExpand = {whatToExpand}
           setWhatToExpand={setWhatToExpand}
           setMessage={setMessage}
-
-       >
+          borderColor="rgba(188, 114, 223, 1)"
+          shadowColor="rgba(188, 114, 223, 0.6)"
+        >
        </ListCategory>: <></>}
+       </motion.div>
       
       {doExpand ? <ListFull
           itemData={clusterItemData[whatToExpand]}
@@ -92,6 +97,9 @@ export default function ForYou() {
           whatToExpand = {whatToExpand}
           setWhatToExpand={setWhatToExpand}
           truncateTitle={truncateTitle}
+          borderColor= {"rgba(188, 114, 223, 1)"}
+          shadowColor= {"rgba(188, 114, 223, 0.6)"}
+
         >
         </ListFull>: <></>}
        </>

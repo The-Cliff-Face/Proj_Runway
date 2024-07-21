@@ -36,6 +36,7 @@
     "react-dom": "^18",
     "react-material-ui-carousel": "^3.4.2",
     "reactjs-popup": "^2.0.6",
+    "sharp": "^0.33.4",
     "stopword": "^3.0.1",
     "svg-radar-chart": "^1.1.0",
     "virtual-dom-stringify": "^3.0.1",

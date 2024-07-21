@@ -66,6 +66,8 @@ export default function WhatsHot() {
           truncateTitle={truncateTitle}
           isExpanded={false}
           setMessage={setMessage}
+          borderColor= {"#d6b36c"}
+          shadowColor= {"#d6b36c99"}
           >
           </ListFull>
 

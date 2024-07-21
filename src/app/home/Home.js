@@ -11,6 +11,9 @@ import WhatsHot from './tabs/WhatsHot';
 import ForYou from './tabs/ForYou';
 import { ConnectProvider } from './Connectors';
 import RunwayAppBar from './RunwayAppBar.js';
+import WhatshotIcon from '@mui/icons-material/Whatshot';
+import ExploreIcon from '@mui/icons-material/Explore';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 
 function CustomTabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -43,7 +46,7 @@ function a11yProps(index) {
 }
 
 export default function Home() {
-  const [value, setValue] = React.useState(0);
+  const [value, setValue] = React.useState(1);
   
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -61,9 +64,9 @@ export default function Home() {
       <RunwayAppBar></RunwayAppBar>
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={value} onChange={handleChange} aria-label="basic tabs example" centered>
-          <Tab label="Explore" {...a11yProps(0)} />
-          <Tab label="For You" {...a11yProps(1)} />
-          <Tab label="What's Hot" {...a11yProps(2)} />
+          <Tab icon={<ExploreIcon />} label="Explore" {...a11yProps(0)} />
+          <Tab icon={<AutoAwesomeIcon/>} label="For You" {...a11yProps(1)} />
+          <Tab icon={<WhatshotIcon />} label="What's Hot" {...a11yProps(2)} />
         </Tabs>
       </Box>
       <ConnectProvider>
