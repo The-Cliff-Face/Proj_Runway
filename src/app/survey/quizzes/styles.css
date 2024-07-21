@@ -15,7 +15,12 @@ body {
 p1 {
     color: rgb(255, 255, 255);
     font-family: "Raleway";
-    font-size: 1.2vw;
+    font-size: 1.11vw;
     margin: 0;
     padding: 0;
+}
+
+p2{
+    font-family: "Raleway";
+    font-size: 2vw;
 }

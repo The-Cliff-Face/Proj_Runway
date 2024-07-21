@@ -22,6 +22,7 @@ function WelcomeLogin() {
             setLocalUsername(username);
         }
     }
+    
     React.useEffect(() => {
         const start = () => {
             refresh();

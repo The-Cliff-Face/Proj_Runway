@@ -74,7 +74,7 @@ export default function SignIn() {
 
       <Container component="main" maxWidth="xs"
         sx={{
-          height: '25vw',
+          height: '48vh',
           background: '#000000',
           boxShadow: '0px 0px 70vw rgba(188, 113, 223, 0.6)',
           marginTop: '14vw',
@@ -120,10 +120,7 @@ export default function SignIn() {
               id="password"
               autoComplete="current-password"
             />
-            <FormControlLabel
-              control={<Checkbox value="remember" color="primary" />}
-              label="Remember me"
-            />
+            
             <Button
               type="submit"
               fullWidth

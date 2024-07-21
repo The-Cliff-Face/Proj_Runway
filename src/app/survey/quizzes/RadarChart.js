@@ -16,16 +16,16 @@ const RadarChart = ({ data, options }) => {
 
     const chart = radar({
         // columns
-        first: truncateTitle(data[0].name) + " : "+ Math.round(data[0].score*100,2)/100,
-        second: truncateTitle(data[1].name) + " : "+ Math.round(data[1].score*100,2)/100,
-        third: truncateTitle(data[2].name) + " : "+ Math.round(data[2].score*100,2)/100,
+        first: truncateTitle(data[0].name) + " : "+ (Math.round(data[0].score*100,2)/100),
+        second: truncateTitle(data[1].name) + " : "+ (Math.round(data[1].score*100,2)/100),
+        third: truncateTitle(data[2].name) + " : "+ (Math.round(data[2].score*100,2)/100),
     }, [
         // data
         {class: 'user', first: data[0].score,  second: data[1].score, third:  data[2].score},
     ]);
 
     const svg = `
-<svg version="1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300"> 
+<svg version="1" xmlns="http://www.w3.org/2000/svg" viewBox="-10 0 120 120"> 
   <style>
     text { /* Add styles for text */
       fill: white; /* Set text color to white */
@@ -52,6 +52,7 @@ const RadarChart = ({ data, options }) => {
 
     return (
         <>
+          
             <img src={`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`} />
         </>
     );

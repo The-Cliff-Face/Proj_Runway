@@ -18,7 +18,10 @@ export default function ListCategory({itemData,comments,popupHandler,
     setExpand,
     whatToExpand,
     setWhatToExpand,
-    setMessage
+    setMessage,
+    borderColor,
+    shadowColor
+
     
 }) {
     const toClusterName = (clusterArray) => {
@@ -48,8 +51,8 @@ export default function ListCategory({itemData,comments,popupHandler,
         >
         <Box>
             
-            <p>Category 1: {toClusterName(clusterNames[0])}</p>
-            <Button onClick={ ()=>expand(0) }>Expand</Button>
+            <p><strong>Category 1: {toClusterName(clusterNames[0])}</strong></p>
+            <Button variant="outlined" onClick={ ()=>expand(0) }>Expand</Button>
             <ImageList sx={{ width: '90vw', height: '21vw', gap: 0 }} cols={itemData[0].length} rowHeight={'15vw'}>
               {itemData[0].map((item) => (
                     <ProductPopup 
@@ -61,14 +64,16 @@ export default function ListCategory({itemData,comments,popupHandler,
                     isLiked={isLiked}
                     likes={likes}
                     truncateTitle={truncateTitle}
+                    shadowColor={shadowColor}
+                    borderColor={borderColor}
                     ></ProductPopup>
               ))}
             </ImageList>
         </Box>
         
         <Box>
-            <p>Category 2: {toClusterName(clusterNames[1])}</p>
-            <Button onClick={ ()=>expand(1) }>Expand</Button>
+            <p><strong>Category 2: {toClusterName(clusterNames[1])}</strong></p>
+            <Button variant="outlined" onClick={ ()=>expand(1) }>Expand</Button>
             <ImageList sx={{ width: '90vw', height: '21vw', gap: 0 }} cols={itemData[1].length} rowHeight={'15vw'}>
               {itemData[1].map((item) => (
                     <ProductPopup 
@@ -79,14 +84,16 @@ export default function ListCategory({itemData,comments,popupHandler,
                     postComment={postComment}
                     isLiked={isLiked}
                     likes={likes}
+                    shadowColor={shadowColor}
+                    borderColor={borderColor}
                     truncateTitle={truncateTitle}
                     ></ProductPopup>
               ))}
             </ImageList>
         </Box>
         <Box>
-            <p>Category 3: {toClusterName(clusterNames[2])}</p>
-            <Button onClick={ ()=>expand(2) }>Expand</Button>
+            <p><strong>Category 3: {toClusterName(clusterNames[2])}</strong></p>
+            <Button variant="outlined" onClick={ ()=>expand(2) }>Expand</Button>
             <ImageList sx={{ width: '90vw', height: '21vw', gap: 0 }} cols={itemData[2].length} rowHeight={'15vw'}>
               {itemData[2].map((item) => (
                     <ProductPopup 
@@ -98,6 +105,8 @@ export default function ListCategory({itemData,comments,popupHandler,
                     isLiked={isLiked}
                     likes={likes}
                     truncateTitle={truncateTitle}
+                    shadowColor={shadowColor}
+                    borderColor={borderColor}
                     setMessage={setMessage}
                     ></ProductPopup>
               ))}

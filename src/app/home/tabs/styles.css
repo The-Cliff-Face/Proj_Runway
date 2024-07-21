@@ -19,6 +19,8 @@ p{
     height: auto; 
     max-width: 15vw;
     max-height: 15vw; 
+    /*
     border: 2px solid rgba(255, 255, 255, 1);
     box-shadow: 0px 0px 30px rgba(255, 255, 255, 0.6);
+    */
 }
