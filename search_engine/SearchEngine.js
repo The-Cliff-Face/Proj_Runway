@@ -21,34 +21,6 @@ class Engine {
         this.cluster_total_num = 0;
 
 
-        this.synonyms = {
-            "female": ["girl","women", "womens", "womans", "girly", "women", "woman", "girls"],
-            "male": ["boy", "man", "men", "mens", "boys", "manly"],
-            "black": ["dark", "charcoal"],
-            "blue": ["indigo", "sky", "navy"],
-            "red": ["crimson", "maroon"],
-            "yellow": ["gold", "cream", "khaki", "peach", "mustard"],
-            "pink": ["magenta", "rose"],
-            "white": ["light", "cream"],
-            "brown": ["khaki", "nude", "tan", "beige", "coffee", "bronze"],
-            "green": ["lime", "army", "olive", "sage", "jade"],
-            "purple": ["voilet", "lavender", "mauve"],
-            "orange": ["peach", "coral", "bronze"],
-            "gray": ["silver", "grey"],
-            "teal": ["turquoise", "sea", "blue", "green", "jade"],
-            "trousers": ["pants", "corduroy", "bottoms"],
-            "tanks": ["top", "sleeveless", "cami", "camisole", "halter", "halterneck", "tank", "strapless", "spaghetti"],
-            "skirts": ["skirt", "skort"],
-            "shorts": ["skort"],
-            "tshirts": ["tees", "tee", "tshirt"],
-            "jeans": ["denim", "jean"],
-            "dresses": ["dress", "romper", "gown", "maxi", "midi", "jumpsuit"],
-            "hoodies": ["hoodie", "sweatshirt", "hood", "zip up", "fleece", "pullover", "jacket"],
-            "sweaters": ["sweater", "knit", "cardigan", "vest", "wool", "crochet"],
-            "coats": ["coat", "blazer", "suit", "jacket", "winter", "overcoat", "trench"],
-            "blouses": ["flowy", "shirt", "blouse"]
-        };
-
     }
 
     tokenizer(term) {
@@ -61,13 +33,12 @@ class Engine {
         return closest(term,words);
     }
 
-    start(data,clusterData) {
+    start(data) {
         this.data = data;
-        this.cluster_data = clusterData;
         this.preprocess_count();
         this.tfid_fit_transform();
-        this.cluster_preprocess_count();
-        this.cluster_tfid_fit_transform();
+        //this.cluster_preprocess_count();
+        //this.cluster_tfid_fit_transform();
     }
     // https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html#sklearn.feature_extraction.text.CountVectorizer
     preprocess_count() { 
@@ -156,7 +127,7 @@ class Engine {
 
     }
 
-
+    /*
     weightedSearch(term, max_results, recommendations) {
         const search_vector = this.tfid_transform(term);
         this.add(search_vector, recommendations.colors);
@@ -184,6 +155,7 @@ class Engine {
         }
         return {ret:ret, message:message};
     }
+    */
 
     filterAndSort(vector, max_r, weight=0.1) {
         let results = [];
@@ -204,24 +176,28 @@ class Engine {
     }
 
     search(term, max_results) {
-        const newTerm = this.findClosestPairing(term);
+        //const newTerm = this.findClosestPairing(term);
 
         const search_vector = this.tfid_transform(term);
-        const A = max_results / 2;
-        const B = max_results / 2;
-        const ret = this.filterAndSort(search_vector,A,0.3)
+        const A = max_results;
+        //const B = max_results / 2;
+        const ret = this.filterAndSort(search_vector,A,0.1)
         
-        const new_vector = this.tfid_transform(newTerm);
+        //const new_vector = this.tfid_transform(newTerm);
 
-        const newRet = this.filterAndSort(new_vector,max_results-ret.length,0.1);
+        //const newRet = this.filterAndSort(new_vector,max_results-ret.length,0.1);
 
-        let combinedRet = [];
+        let combinedRet = ret;
+        /*
         for (let i=0;i<ret.length;i++) {
             combinedRet.push(ret[i]);
         }
+        */
+        /*
         for (let i=0;i<newRet.length;i++) {
             combinedRet.push(newRet[i]);
         }
+        */
         
         let message = "";
         
@@ -364,15 +340,37 @@ class Engine {
 
 }
 
+function seperate(data) {
+    let male_data = [];
+    let female_data = [];
+    data.forEach((row) => {
+        const gender = row.gender;
+        if (gender == "female") {
+            female_data.push(row);
+        } else {
+            male_data.push(row);
+        }
+
+    });
+    return {female_data, male_data};
+
+}
+
 
 
 const engine = new Engine();
+const male_clothing_engine = new Engine();
+const female_clothing_engine = new Engine();
 
 parentPort.on('message', (msg) => {
     if (msg.type === 'start') {
-        const { documents, clusters } = msg.task;
-        engine.start(documents, clusters);
+        const { documents } = msg.task;
+        engine.start(documents);
+        const {female_data, male_data } = seperate(documents);
+        male_clothing_engine.start(male_data);
+        female_clothing_engine.start(female_data);
         parentPort.postMessage({ type: 'loaded' });
+
     } else if (msg.type === 'query') {
         console.log("Running Standard Query!");
         const { id, field, max_results } = msg.task;
@@ -390,15 +388,25 @@ parentPort.on('message', (msg) => {
         const result = engine.spellcheck(term);
         parentPort.postMessage({type: 'spellResult', result });
 
-    } else if (msg.type === 'weightedQuery') {
-        console.log("Running Weighted Query!");
-        const { field, max_results, recommendation } = msg.task;
-        if (engine.vectorize_dict.length == 0) {
+        
+    } else if (msg.type === 'gendered_query') {
+        const { id, field, max_results, type } = msg.task;
+        if (male_clothing_engine.vectorize_dict.length == 0 || female_clothing_engine.vectorize_dict.length == 0) {
             const results = [];
-            parentPort.postMessage({ type: 'queryWeightedResult', results });
+            parentPort.postMessage({ type: `queryGendered+${id}`, results });
         }  else {
-            const result = engine.weightedSearch(field,max_results,recommendation);
-            parentPort.postMessage({ type: 'queryWeightedResult', result });
+            if (type == "female") {
+                const result = female_clothing_engine.search(field,max_results);
+                parentPort.postMessage({ type: `queryGendered+${id}`, result });
+            } else if (type == "male") {
+                const result = male_clothing_engine.search(field,max_results);
+                parentPort.postMessage({ type: `queryGendered+${id}`, result });
+            } else {
+                const result = engine.search(field,max_results);
+                parentPort.postMessage({ type: `queryGendered+${id}`, result });
+            }
+            
+            
         }
 
     }

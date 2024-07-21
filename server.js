@@ -152,6 +152,8 @@ app.post('/api/verify_email', async (req, res) => {
 });
 
 
+
+
 app.post('/api/createProfile', async (req, res) =>  {
     // input: email and username
     const tokenResult = verifyAndDecodeToken(req);
@@ -206,6 +208,9 @@ app.post('/api/getProfile', async (req, res) =>  {
     res.status(200).json({ res: user.username, likes:likes, error: '' });
 
 });
+
+
+
 
 app.post('/api/updateRecommendations', async (req, res) => {
     // input: recommandation Matrix
@@ -336,12 +341,23 @@ app.post('/api/refresh', async (req, res) => {
 async function grabData() {
     const db = client.db("Runway");
     const collection = db.collection("Clothing");
-    const documents = await collection.find({}).toArray();
-    const clusCol = db.collection("clusters");
-    const clusters = await clusCol.find({}).toArray();
-    worker.postMessage({ type: 'start' , task: {documents, clusters}});
-    recommenderWorker.postMessage({type: 'start', task: clusters});
+    const male_clusters = db.collection("clusters_male");
+    console.log("grabbing data 1/4");
+    const male_clusters_data = await male_clusters.find({}).toArray();
 
+    const female_clusters = db.collection("clusters_female");
+    console.log("grabbing data 2/4");
+    const female_cluster_data = await female_clusters.find({}).toArray();
+
+    console.log("grabbing data 3/4");
+    const documents = await collection.find({}).toArray();
+    
+
+    const clusCol = db.collection("clusters");
+    console.log("grabbing data 4/4");
+    const clusters = await clusCol.find({}).toArray();
+    worker.postMessage({ type: 'start' , task: {documents}});
+    recommenderWorker.postMessage({type: 'start', task: {clusters, male_clusters_data, female_cluster_data}});
 
 }
  
@@ -356,7 +372,7 @@ worker.on('message', (msg) => {
     if (msg.type === 'loaded') {
         console.log("Search Worker Started");
     }
-    if (msg.type && msg.type.startsWith('queryResult+')) {
+    if (msg.type.startsWith('query')) {
         const requestId = msg.type.split('+')[1];
         const { resolve, reject } = searchRequestMap.get(requestId) || {};
         if (resolve) {
@@ -392,7 +408,7 @@ app.post('/api/recommend', async (req, res) => {
     }
 
     const recommendation = user.recommendations;
-    recommenderWorker.postMessage({ type: 'recommend', task: recommendation });
+    recommenderWorker.postMessage({ type: 'recommend', task: {rec:recommendation, type:recommendation.other.gender} });
     recommenderWorker.once('message', (msg) => {
         if (msg.type === 'recommendResult') {
             ret = msg.results;
@@ -475,7 +491,7 @@ app.post('/api/search', async (req, res) => {
     });
     
     worker.postMessage({ type: 'query', task:{id:requestId, field:search, max_results:max_results} });
-    let ret = {};
+
     try {
         const result = await resultPromise;
         if (result.ret.length > 0) {
@@ -489,10 +505,9 @@ app.post('/api/search', async (req, res) => {
     
 });
 
-app.post('/api/weightedSearch', async (req, res) => {
+app.post('/api/genderedSearch', async (req, res) => {
 
     const { search, max_results } = req.body;
-
     
     const tokenResult = verifyAndDecodeToken(req);
     if (tokenResult.hasOwnProperty('error')) {
@@ -504,24 +519,67 @@ app.post('/api/weightedSearch', async (req, res) => {
     let user = await userProfiles.findOne({"email": tokenResult.email});
     if (!user.recommendations) {
         res.status(200).json({error:"Invalid User Profile!"});
+        return;
     }
 
-    //const { search, max_results } = req.body;
-    worker.postMessage({ type: 'weightedQuery', task:{field:search, max_results:max_results, recommendation: user.recommendations} });
-    let ret = {};
-    worker.once('message', (msg) => {
-        if (msg.type === 'queryWeightedResult') {
-            ret = msg.result;
-            res.status(200).json({results: ret, error:""});
-        }
+    const recommendation = user.recommendations;
+
+    const requestId = crypto.randomUUID(); 
+
+    const resultPromise = new Promise((resolve, reject) => {
+        searchRequestMap.set(requestId, { resolve, reject });
     });
-    if (ret.length == 0) {
-        res.status(404).json({results: ret, error:"not found"});
-        return;
+
+    //const { search, max_results } = req.body;
+    worker.postMessage({ type: 'gendered_query', task:{id:requestId, field:search, max_results:max_results, type: recommendation.other.gender} });
+    try {
+        const result = await resultPromise;
+        if (result.ret.length > 0) {
+            res.status(200).json({ results: result, error: "" });
+        } else {
+            res.status(404).json({ results: result, error: "not found" });
+        }
+    } catch (error) {
+        res.status(500).json({ results: "", error: error.message });
     }
     
 });
 
+async function updateUserRecommendationsBasedOffPost(params) {
+    const { id, like, userProfiles, tokenResult, user } = params;
+    const db = client.db('Runway');
+    const clothing = db.collection('Clothing');
+    const item = await clothing.findOne({id:id});
+
+    let recommendation = user.recommendations;
+    if (typeof recommendation == 'null') {
+        return;
+    }
+
+    if (item) {
+        const tokens = item.name_processed.split(" ");
+        for (let i=0;i<tokens.length;i++) {
+            const word = tokens[i].toLowerCase();
+            if (word !== 'gender') {
+                if (recommendation.other.hasOwnProperty(word)) {
+                    recommendation.other[word] += like;
+                } else {
+                    recommendation.other[word] = like;
+                }
+            }
+        }
+        console.log(recommendation);
+
+    }
+    
+    userProfiles.updateOne({"email": tokenResult.email}, {
+        $set: {'recommendations': recommendation},
+    });
+
+
+    
+
+}
 
 
 function updateUserLikes(params) {
@@ -534,8 +592,9 @@ function updateUserLikes(params) {
         return true;
     }
     let liked = user.liked;
+    console.log(liked);
     if (like > 0) {
-        if (liked.indexOf(like) > 0) {
+        if (liked.includes(id)) {
             return false;
         }
         liked.push(id);
@@ -604,6 +663,7 @@ app.post('/api/like', async (req, res) =>  {
     const didLike = updateUserLikes(params);
     if (didLike) {
         updateDocumentLikes(params);
+        updateUserRecommendationsBasedOffPost(params);
     } else {
         res.status(200).json({sucess: "false", error:"duplicate like"});
         return;
