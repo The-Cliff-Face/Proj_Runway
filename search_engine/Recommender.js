@@ -22,18 +22,18 @@ class Recommender  {
       
         
         this.synonyms = {
-            "female": ["girl","women", "womens", "womans", "girly", "women", "woman", "girls"],
-            "male": ["boy", "man", "men", "mens", "boys", "manly"],
+            "female": ["women", "womens", "womans", "women", "woman"],
+            "male": ["man", "men", "mens", "manly"],
             "black": ["dark", "charcoal"],
             "blue": ["indigo", "sky", "navy"],
             "red": ["crimson", "maroon"],
             "yellow": ["gold", "cream", "khaki", "peach", "mustard"],
-            "pink": ["magenta", "rose"],
+            "pink": ["magenta", "fuscia", "salmon"],
             "white": ["light", "cream"],
             "brown": ["khaki", "nude", "tan", "beige", "coffee", "bronze"],
             "green": ["lime", "army", "olive", "sage", "jade"],
             "purple": ["voilet", "lavender", "mauve"],
-            "orange": ["peach", "coral", "bronze"],
+            "orange": ["peach", "coral", "bronze", "salmon"],
             "gray": ["silver", "grey"],
             "teal": ["turquoise", "sea", "blue", "green", "jade"],
             "trousers": ["pants", "corduroy", "bottoms"],
@@ -43,7 +43,7 @@ class Recommender  {
             "tshirts": ["tees", "tee", "tshirt"],
             "jeans": ["denim", "jean"],
             "dresses": ["dress", "romper", "gown", "maxi", "midi", "jumpsuit"],
-            "hoodies": ["hoodie", "sweatshirt", "hood", "zip up", "fleece", "pullover", "jacket"],
+            "hoodies": ["hoodie", "sweatshirt", "hood", "zip up", "fleece", "pullover", "jacket", "hoody"],
             "sweaters": ["sweater", "knit", "cardigan", "vest", "wool", "crochet"],
             "coats": ["coat", "blazer", "suit", "jacket", "winter", "overcoat", "trench"],
             "blouses": ["flowy", "shirt", "blouse"],
@@ -202,7 +202,7 @@ class Recommender  {
     combineVectors(vector1, vector2) {
         let combinedVector = { ...vector1 };
         for (let key in vector2) {
-            console.log(key);
+            
           if (combinedVector[key]) {
             combinedVector[key] += vector2[key];
           } else {
@@ -210,19 +210,54 @@ class Recommender  {
           }
         }
         return combinedVector;
-      }
+    }
+
+    
+    findBestColors(colors) {
+        let results = [];
+        Object.keys(colors).forEach((color, index) => {
+            results.push({ color: color, score: colors[color] })
+        });
+        results.sort((a, b) => b.score - a.score);
+        return results;
+
+    }
+    inject(array, toinject) {
+        let counter = 0;
+        for (let i=3;i<array.length;i++) {
+            try {
+                array[i] = toinject[counter].color;
+                counter++;
+            } catch (e) {
+                // do nothing
+                continue;
+            }
+            
+        }
+        
+    }
 
 
 
     recommend(userRec) {
         // userRec has colors, clothes, and other
         let userVector = {};
+        try {
+            if (this.vectorize_dict === undefined || this.vectorize_dict[6] === undefined) {
+                throw new Error("Element not defined");
+            }
+            const r = this.vectorize_dict[6];
+        } catch (error) {
+            return { ret: [], message: "failed" };
+        }
         
-        this.tfid_transform(userVector,userRec.clothes, 2.5);
-        this.tfid_transform(userVector,userRec.colors, 1);
+        this.tfid_transform(userVector,userRec.clothes, 3);
+        let colorVector = {};
+        this.tfid_transform(colorVector,userRec.colors, 1);
+        const color_results = this.findBestColors(colorVector);
         let newVector = {};
         this.add(newVector, userRec.other, 2);
-        
+        userVector = this.combineVectors(colorVector,userVector)
         let combinedVector = this.combineVectors(userVector, newVector);
         
         try {
@@ -231,7 +266,6 @@ class Recommender  {
         } catch (error) {
             return {ret:[], message:"failed"};
         }
-        console.log(combinedVector);
         
         let results = [];
         this.vectorize_dict.forEach((doc_vector, index) => {
@@ -240,12 +274,14 @@ class Recommender  {
         });
         // perform ranking
         results.sort((a, b) => b.score - a.score);
-
+    
         let ret = [];
         for (let i=0;i<this.MAX_RESULTS;i++) {
             let index = results[i].index;
             let score = results[i].score;
+            this.inject(this.data[index].values, color_results);
             ret.push({data:this.data[index], score:score});
+            console.log(this.data[index]);
         }
         
         let message = "";

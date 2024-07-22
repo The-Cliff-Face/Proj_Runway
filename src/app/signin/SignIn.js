@@ -74,7 +74,8 @@ export default function SignIn() {
 
       <Container component="main" maxWidth="xs"
         sx={{
-          height: '48vh',
+          //height: '48vh',
+          height: 'clamp(400px, 20vh, 550px)',
           background: '#000000',
           boxShadow: '0px 0px 70vw rgba(188, 113, 223, 0.6)',
           marginTop: '14vw',

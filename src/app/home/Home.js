@@ -10,7 +10,7 @@ import { useState } from 'react';
 import WhatsHot from './tabs/WhatsHot';
 import ForYou from './tabs/ForYou';
 import { ConnectProvider } from './Connectors';
-import RunwayAppBar from './RunwayAppBar.js';
+import RunwayAppBar from '../RunwayAppBar';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import ExploreIcon from '@mui/icons-material/Explore';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';

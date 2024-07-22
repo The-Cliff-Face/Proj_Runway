@@ -2,16 +2,14 @@ import * as React from 'react';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import MenuIcon from '@mui/icons-material/Menu';
-import Divider from '@mui/material/Divider';
 import InfoIcon from '@mui/icons-material/Info';
 import HomeIcon from '@mui/icons-material/Home';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
-
+import Cookies from 'js-cookie';
+import { AuthContext } from './AuthContext';
+import { useRouter } from 'next/router';
 
 // The current app bar is designed for a logged in user.
 // We need to keep track of whether or not the user is signed in
@@ -22,6 +20,10 @@ import PersonIcon from '@mui/icons-material/Person';
 
 // https://mui.com/material-ui/react-app-bar/
 export default function RunwayAppBar() {
+  const {logout } = React.useContext(AuthContext);
+  var bp = require('/src/app/Path.js');
+
+
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static">
@@ -29,7 +31,7 @@ export default function RunwayAppBar() {
           <Button sx={{ mr: 'auto' }} href="/home" startIcon={<HomeIcon />} size="large" color="inherit">Home</Button>
           <Button href="/profile" startIcon={<PersonIcon />} size="large" color="inherit">My Profile</Button>
           <Button href="/info" startIcon={<InfoIcon />} size="large" color="inherit">About Us</Button>
-          <Button href="/" startIcon={<LogoutIcon />} size="large" color="inherit">Log Out</Button>
+          <Button href='/' onClick={(logout)} startIcon={<LogoutIcon />} size="large" color="inherit">Log Out</Button>
         </Toolbar>
       </AppBar>
     </Box>

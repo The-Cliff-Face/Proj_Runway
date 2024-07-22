@@ -25,6 +25,7 @@
     "express": "^4.19.2",
     "fastest-levenshtein": "^1.0.16",
     "framer-motion": "^11.2.12",
+    "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
     "mailgun.js": "^10.2.1",
     "mongodb": "^6.7.0",

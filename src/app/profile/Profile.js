@@ -19,18 +19,37 @@ import Popup from 'reactjs-popup';
 import heartClicked from "/public/heartClicked.png";
 import surveyIcon from "/public/surveyIcon.png";
 import { useRouter } from 'next/navigation';
+import FavoritesPopup from './FavoritesPopup';
+import { Connectors } from '/src/app/home/Connectors.js';
+import Cookies from 'js-cookie';
+
+
 import "./styles.css";
 
 
 export default function Profile() {
+
+  const { toggleLike, fetchComments, postComment, comments, setMessage } = useContext(Connectors)
+  const { isLiked,likes,truncateTitle  } = useContext(Connectors);
+  
+
   var bp = require('/src/app/Path.js');
   const router = useRouter();
   let { token } = useContext(AuthContext);
   const { setToken } = useContext(AuthContext);
-  const { refreshToken } = useContext(AuthContext);
+  const { refreshToken, logout } = useContext(AuthContext);
   const [open, setOpen] = useState(false);
   let { username, getUsername, setUsername } = React.useContext(AuthContext);
   const [ localUsername, setLocalUsername] = React.useState("");
+  const [data, setData] = useState([]);
+  const [isLoading, setLoading] = useState(false);
+
+  const logoutHandler = async () => {
+    setToken("");
+    await logout();
+    router.push('/signin');
+
+  }
 
   const refresh = () => {
     if (!username) {
@@ -41,10 +60,20 @@ export default function Profile() {
       setLocalUsername(username);
     }
   }
+  const popupHandler = async (id) => {
+
+    const dLike = await fetchComments(id);
+    if (dLike && !isLiked) {
+      toggleLike();
+    } else if (isLiked && !dLike) {
+      toggleLike();
+    }
+  };
 
   React.useEffect(() => {
     const start = () => {
         refresh();
+        setData([]);
     };
     start();
   }, []);
@@ -55,16 +84,55 @@ export default function Profile() {
       setToken(newToken);
       token = newToken;
     }
-
-    let response = await fetch(bp.buildPath('api/getProfile'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        "authorization": token,
+    try {
+      let response = await fetch(bp.buildPath('api/getUserLikes'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          "authorization": token,
+        }
+      });
+      var txt = await response.text();
+      var res = JSON.parse(txt);
+      const results = res.results;
+      
+      var entries = [];
+      for( var i=0; i<results.length; i++ )
+      {   
+                
+            const product = results[i];
+            if (!product) {continue;}
+            
+            let images = "";
+            if (Array.from(product.images)[0] == '[') {
+                images = product.images.slice(1, -1).split(',').map(item => item.slice(1, -1));
+                for (let j=0;j<images.length;j++) {
+                    const temp = images[j];
+                    if (temp[0] == "'") {
+                        let h = temp.split("'");
+                        images[j] = h[1];
+                    }
+                }
+  
+            } else {
+                images = [product.images];
+            }
+                
+            const image = images;
+            const entry = {
+                "img":image,
+                "title":product.name,
+                "id":product.id,
+                "url":product.url,
+            }
+            entries.push(entry);
+              
       }
-    });
-    var txt = await response.text();
-    console.log(txt);
+      setData(entries);
+    } catch (error) {
+      console.log(error);
+    }
+    
   };
 
   const openSurvey = async () => {
@@ -72,8 +140,17 @@ export default function Profile() {
   };
 
   const openPopup = async () => {
-    await grabProfile();
-    setOpen(true);
+    try {
+      setData([]);
+      setOpen(true);
+      setLoading(true);
+      await grabProfile();
+      setLoading(false);
+    } catch (e) {
+      setLoading(false);
+      setOpen(false);
+    }
+    
   };
 
   return (
@@ -146,42 +223,33 @@ export default function Profile() {
 
             <br></br>
 
-            <Link variant="body2" className="body2">
+            <Link variant="body2" className="body2" onClick={logoutHandler} >
               Logout
             </Link>
 
           </Box>
         </Container>
 
-        <Popup open={open} onClose={() => setOpen(false)} modal nested>
-          <motion.div
-            initial={{ opacity: 0, y: -60 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          > 
-          <div 
-            style={{ 
-              padding: '20px', 
-              backgroundColor: 'black',
-              width: '75vw',
-              height: '50vw',
-              overflowY: 'auto', 
-              color: 'white',
-              boxShadow: '0px 0px 70vw rgba(188, 113, 223, 0.6)',
-              border: '2px solid rgba(188, 113, 223, 1)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
+        <FavoritesPopup
+          open={open}
+          setOpen={setOpen}
+          itemData={data}
+          comments={comments}
+          toggleLike={toggleLike}
+          popupHandler={popupHandler}
+          postComment={postComment}
+          isLiked={isLiked}
+          likes={likes}
+          truncateTitle={truncateTitle}
+          isExpanded={false}
+          setMessage={setMessage}
+          borderColor= {"#ff78c7"}
+          shadowColor= {"#ff78c7"}
+          isLoading = {isLoading}
 
-            <Typography component="h1" variant="h5" className="h1">
-              Your Favorites
-            </Typography>
-            
-            <Button onClick={() => setOpen(false)} style={{ maxWidth: '20vw', alignSelf: 'center' }}>Close</Button>
-          </div>
-          </motion.div>
-        </Popup>
+        >
+        </FavoritesPopup>
+        
       </motion.div>
     </Stack>
   );

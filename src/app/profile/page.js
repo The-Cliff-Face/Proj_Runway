@@ -1,9 +1,9 @@
 'use client';
 
-import Profile from './Profile.js';
+import ProfileWrapper from "./ProfileWrapper";
 
 export default function Page() {
     return (
-        <Profile />
+        <ProfileWrapper />
     );
 }
