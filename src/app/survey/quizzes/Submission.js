@@ -24,7 +24,7 @@ export default function Submission({ userRes }) {
     useEffect(() => {
         const start = () => {
             updateRecommendations();
-            grabRecommendedClusters();
+            
         };
         start();
       }, []);
@@ -77,7 +77,7 @@ export default function Submission({ userRes }) {
         }
         var obj = { recommendation: userRes.recommendations };
         var js = JSON.stringify(obj);
-        console.log(obj);
+       
 
         try {
             const response = await fetch(bp.buildPath('api/updateRecommendations'), {
@@ -88,11 +88,11 @@ export default function Submission({ userRes }) {
                     "authorization": token,
                 }
             });
-            var txt = await response.text();
-            console.log(txt);
+            return true;
 
         } catch (error) {
             console.log(error);
+            return false;
         }
     }
 
@@ -112,6 +112,7 @@ export default function Submission({ userRes }) {
                 textAlign="center"
                 overflow="auto" 
             >
+                
                 <p2>Your Survey Results</p2>
                 {didSubmit && (
                     <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center">
@@ -120,7 +121,8 @@ export default function Submission({ userRes }) {
                         <RadarChart data={data} />
                     </Box>
                 )}
-                <Button variant="outlined" onClick={goHome}>Done</Button>
+                {!didSubmit ? <Button onClick={grabRecommendedClusters}>Display</Button>: <></>}
+                {didSubmit ? <Button variant="outlined" onClick={goHome}>Done</Button>: <></>}
             </Box>
         </motion.div>
     );

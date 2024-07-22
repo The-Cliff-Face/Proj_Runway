@@ -16,9 +16,8 @@ import './styles.css';
 
 export default function WhatsHot() {
 
-  const { toggleLike, fetchComments, postComment, search,comments, setMessage } = useContext(Connectors)
+  const { toggleLike, fetchComments, postComment, comments, setMessage } = useContext(Connectors)
   const { whatisHotData,isLiked,likes,truncateTitle,grabWhatsHot  } = useContext(Connectors);
-  const [ searchWord, setWord ] = useState(""); 
   const [ isLoading, setLoading ] = useState(true);
 
   const popupHandler = async (id) => {
@@ -29,7 +28,6 @@ export default function WhatsHot() {
       toggleLike();
 
     }
-
   };
   const grabWrapper = async () => {
     const re = await grabWhatsHot();
@@ -40,7 +38,12 @@ export default function WhatsHot() {
   }
   useEffect(() => {
     const start = () => {
-      grabWrapper();
+      if (whatisHotData.length == 0) {
+        grabWrapper();
+      } else {
+        setLoading(false);
+      }
+      
       
     };
     start();

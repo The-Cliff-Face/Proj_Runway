@@ -22,7 +22,7 @@ require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const saltLength = 8;
 const url = process.env.MONGODB_URI;
-console.log(url);
+
 const MongoClient = require('mongodb').MongoClient;
 const client = new MongoClient(url);
 client.connect();
@@ -125,7 +125,7 @@ app.post('/api/signup', async (req, res) => {
             newUser.email
         );
         users.insertOne(newUser);
-        let ret = { error: '' };
+        let ret = { accessToken: createAccessToken(req.body.email), error: '' };
         res.status(200).json(ret);
     });
 });
@@ -243,6 +243,15 @@ app.post('/api/updateRecommendations', async (req, res) => {
 
 });
 
+app.post('/api/logout', (req, res) => {
+    res.clearCookie('refreshToken', {
+      path: '/',
+      sameSite: 'strict',
+    });
+    res.status(200).json({error: ''});
+});
+  
+
 
 app.post('/api/signin', async (req, res) => {
     // input json:
@@ -324,6 +333,47 @@ app.post('/api/getWhatsHot', async (req, res) => {
 
 });
 
+app.post('/api/getUserLikes', async (req, res) => {
+    const tokenResult = verifyAndDecodeToken(req);
+    if (tokenResult.hasOwnProperty('error')) {
+        res.status(401).json({results: "", error:tokenResult.error});
+        return;
+    } 
+    const db = client.db("Runway");
+    const userProfiles = db.collection('userProfiles');
+    const Clothing = db.collection("Clothing");
+    let user = await userProfiles.findOne({"email": tokenResult.email});
+    if (!user) {
+        res.status(404).json({results: [], error:"cant find user"});
+        return;
+    }
+
+    const likes = user.liked;
+    console.log(likes);
+    console.log(user);
+    if (!likes) {
+        res.status(200).json({results: [], error:""});
+        return;
+    }
+    
+    let ret = [];
+    try {
+        for (let i=0;i<likes.length;i++) {
+            const item = await Clothing.findOne({id:likes[i]});
+            if (!item){
+                continue;
+            }
+            ret.push(item);
+        }
+        res.status(200).json({results: ret, error:""});
+        return;
+    } catch (e) {
+        res.status(200).json({results: [], error:e});
+        return;
+    }
+    
+});
+
 
 app.post('/api/refresh', async (req, res) => {
     const refreshToken = req.cookies.refreshToken;
@@ -340,7 +390,6 @@ app.post('/api/refresh', async (req, res) => {
 
 async function grabData() {
     const db = client.db("Runway");
-    const collection = db.collection("Clothing");
     const male_clusters = db.collection("clusters_male");
     console.log("grabbing data 1/4");
     const male_clusters_data = await male_clusters.find({}).toArray();
@@ -350,15 +399,17 @@ async function grabData() {
     const female_cluster_data = await female_clusters.find({}).toArray();
 
     console.log("grabbing data 3/4");
-    const documents = await collection.find({}).toArray();
-    
-
     const clusCol = db.collection("clusters");
-    console.log("grabbing data 4/4");
     const clusters = await clusCol.find({}).toArray();
-    worker.postMessage({ type: 'start' , task: {documents}});
     recommenderWorker.postMessage({type: 'start', task: {clusters, male_clusters_data, female_cluster_data}});
-
+    
+    console.log("grabbing data 4/4");
+    const collection = db.collection("Clothing");
+    const documents = await collection.find({}).toArray();
+    worker.postMessage({ type: 'start' , task: {documents}});
+    
+    
+    
 }
  
 
@@ -481,9 +532,7 @@ app.post('/api/search', async (req, res) => {
     if (tokenResult.hasOwnProperty('error')) {
         res.status(401).json({results: "", error:tokenResult.error});
         return;
-    } else {
-        console.log(tokenResult);
-    }
+    } 
     const requestId = crypto.randomUUID(); 
 
     const resultPromise = new Promise((resolve, reject) => {
@@ -507,7 +556,8 @@ app.post('/api/search', async (req, res) => {
 
 app.post('/api/genderedSearch', async (req, res) => {
 
-    const { search, max_results } = req.body;
+    const { search, max_results, type } = req.body;
+    
     
     const tokenResult = verifyAndDecodeToken(req);
     if (tokenResult.hasOwnProperty('error')) {
@@ -523,6 +573,12 @@ app.post('/api/genderedSearch', async (req, res) => {
     }
 
     const recommendation = user.recommendations;
+    let gender = "all";
+    if (!type) {
+        gender = recommendation.other.gender;;
+    } else {
+        gender = type;
+    }
 
     const requestId = crypto.randomUUID(); 
 
@@ -531,7 +587,7 @@ app.post('/api/genderedSearch', async (req, res) => {
     });
 
     //const { search, max_results } = req.body;
-    worker.postMessage({ type: 'gendered_query', task:{id:requestId, field:search, max_results:max_results, type: recommendation.other.gender} });
+    worker.postMessage({ type: 'gendered_query', task:{id:requestId, field:search, max_results:max_results, type: gender} });
     try {
         const result = await resultPromise;
         if (result.ret.length > 0) {
@@ -540,7 +596,7 @@ app.post('/api/genderedSearch', async (req, res) => {
             res.status(404).json({ results: result, error: "not found" });
         }
     } catch (error) {
-        res.status(500).json({ results: "", error: error.message });
+        res.status(500).json({ results: {ret:[]}, error: error.message });
     }
     
 });
@@ -568,7 +624,6 @@ async function updateUserRecommendationsBasedOffPost(params) {
                 }
             }
         }
-        console.log(recommendation);
 
     }
     
@@ -592,7 +647,7 @@ function updateUserLikes(params) {
         return true;
     }
     let liked = user.liked;
-    console.log(liked);
+    
     if (like > 0) {
         if (liked.includes(id)) {
             return false;

@@ -30,8 +30,10 @@ export default function SignUp() {
 
   const [emailIsValid, setEmailIsValid] = useState(true);
   const [email, setEmail] = useState('');
-
+  const [username, setUsername ] = useState('');
+  const [accessToken, setAccessToken ] = useState('');
   const [usernameIsValid, setUsernameIsValid] = useState(true);
+
     if (typeof window !== "undefined") {
         var _ud = window.localStorage.getItem('user_data');
         var ud = JSON.parse(_ud);
@@ -66,11 +68,35 @@ export default function SignUp() {
   function handleUsernameValidation(e) {
     setUsernameIsValid(validateUsername(e.target.value));
   }
+  const createProfile = async () => {
+
+    var obj = {email:email,username:username};
+    var js = JSON.stringify(obj);
+
+    const response = await fetch(
+      bp.buildPath('api/createProfile'),
+      {
+        method: 'POST',
+        body: js,
+        headers: { 'Content-Type': 'application/json' }
+      }
+
+    );
+    var txt = await response.text();
+    var res = JSON.parse(txt);
+    if (res.hasOwnProperty("error")) {
+      if (res.error != "") {
+        console.log(error);
+      }
+    }
+    
+  }
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     setEmail(data.get('email'));
+    setUsername(data.get('username'));
 
     console.log({
       username: data.get('username'),
@@ -93,12 +119,15 @@ export default function SignUp() {
       }
     );
     let res = JSON.parse(await response.text());
+    setAccessToken(res.accessToken);
+
 
     if (res.error === "") {
       setSubmittedForm(true);
     } else {
       console.log(res.error);
     }
+    await createProfile();
   };
 
   return (
@@ -109,7 +138,8 @@ export default function SignUp() {
     >
       <Container component="main" maxWidth="xs"
         sx={{
-          height: '26vw',
+          //height: '26vw',
+          height: 'clamp(448px, 20vh, 598px)',
           background: '#000000',
           boxShadow: '0px 0px 70vw rgba(188, 113, 223, 0.6)',
           marginTop: '14vw',

@@ -254,6 +254,7 @@ const ConnectProvider = ({ children }) => {
                     "img":image,
                     "title":product.name,
                     "id":product.id,
+                    "url":product.url,
                 }
                 entries.push(entry);
                   
@@ -267,9 +268,91 @@ const ConnectProvider = ({ children }) => {
         {   
             const newToken = await refreshToken();
             if (newToken) {
-                handleError("Logging In, Using Refresh Token, Try Again");
+                handleError("Server is super busy give me a second, thanks");
             } else {
                 handleError("You are not logged in");
+            }
+            setToken(newToken);
+            console.log(e.toString());
+            
+        }
+
+    };
+
+    const genderedSearch = async (searchTerm, m_results=100, type="") => {
+        if (!token) {
+            const newToken = await refreshToken();
+            setToken(newToken);
+            token = newToken;
+              
+        }
+            
+        setData([]); // refresh the data
+        var obj = {search:searchTerm,max_results:m_results};
+        if (type != "") {
+            obj['type'] = type;
+        }
+        var js = JSON.stringify(obj);
+  
+        try
+        {
+            let response = await fetch(bp.buildPath('api/genderedSearch'),
+            {method:'POST',body:js , 
+                headers:{
+                    'Content-Type': 'application/json',
+                    "authorization": token,
+            }});
+                  
+            var txt = await response.text();
+            var res = JSON.parse(txt);
+            if (res.error != "") {
+                console.log(res.error);
+            }
+            var _results = res.results.ret;
+               
+            var entries = [];
+            for( var i=0; i<_results.length; i++ )
+            {   
+                    
+                const product = _results[i];
+                // i hate this so much, idk what is going on
+                let images = "";
+                if (Array.from(product.images)[0] == '[') {
+                    images = product.images.slice(1, -1).split(',').map(item => item.slice(1, -1));
+                    for (let j=0;j<images.length;j++) {
+                        const temp = images[j];
+                        if (temp[0] == "'") {
+                            let h = temp.split("'");
+                            images[j] = h[1];
+                        }
+                    }
+
+                } else {
+                    images = [product.images];
+                }
+                    
+                const image = images;
+                const entry = {
+                    "img":image,
+                    "title":product.name,
+                    "id":product.id,
+                    "url":product.url,
+                }
+                entries.push(entry);
+                  
+            }
+                
+                //setData(entries);
+                return entries;
+                
+        }
+        catch(e)
+        {   
+            const newToken = await refreshToken();
+            if (newToken) {
+                handleError("Using refresh token try again or server might be busy");
+            } else {
+                handleError("You are not logged in or server is down");
             }
             setToken(newToken);
             console.log(e.toString());
@@ -306,6 +389,7 @@ const ConnectProvider = ({ children }) => {
             {   
                     
                 const product = results[i];
+                if (!product) {continue;}
                 
                 let images = "";
                 if (Array.from(product.images)[0] == '[') {
@@ -327,6 +411,7 @@ const ConnectProvider = ({ children }) => {
                     "img":image,
                     "title":product.name,
                     "id":product.id,
+                    "url":product.url,
                 }
                 entries.push(entry);
                   
@@ -337,10 +422,10 @@ const ConnectProvider = ({ children }) => {
         } catch (error) {
             const newToken = await refreshToken();
             if (newToken) {
-                handleError("Logging In, Using Refresh Token, Try Again");
+                handleError("Logging using refresh token! Try again");
                 setToken(newToken);
             } else {
-                handleError("You are not logged in");
+                handleError("You are not logged in or server is still starting");
             }
             console.log(error);
         }
@@ -375,6 +460,7 @@ const ConnectProvider = ({ children }) => {
                 
                 let resultantItemData = [0,0,0];
                 let clusNames = [];
+                console.log(res.results.ret[0].data);
                 for (let i=0;i< 3;i++) {
                     var _results = res.results.ret[i].data.values;
                     
@@ -387,9 +473,9 @@ const ConnectProvider = ({ children }) => {
                         
                     }
                     
-                    const entries = await search(searchString, 10);
+                    const entries = await genderedSearch(searchString, 10);
                     resultantItemData[i] = entries;
-                    console.log(entries[0].title + ": "+ searchString);
+                    console.log(searchString);
                     
 
                 }
@@ -422,6 +508,7 @@ const ConnectProvider = ({ children }) => {
         truncateTitle,
         grabRecommendedClusters,
         clusterItemData,
+        genderedSearch,
         search,
         itemData,
         setData,

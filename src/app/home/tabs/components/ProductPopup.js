@@ -14,6 +14,7 @@ import Paper from '@mui/material/Paper';
 import heartOutline from "/public/heartOutline.png";
 import heartClicked from "/public/heartClicked.png";
 import { motion } from 'framer-motion';
+import { ShoppingCartCheckout } from '@mui/icons-material';
 
 
 export default function ProductPopup({item,
@@ -28,6 +29,10 @@ export default function ProductPopup({item,
   borderColor,
   shadowColor
   }) {
+
+    const handleRedirect = (item) => {
+      window.location.href = item.url;
+    }
     
 
     return (
@@ -106,6 +111,7 @@ export default function ProductPopup({item,
                       </Carousel>
             
                       <h2>{item.title}</h2>
+                      
    
                       <Box sx={{ backgroundColor: '#473651', padding: '10px' }}>
                            <p>Comments:</p>
@@ -139,16 +145,21 @@ export default function ProductPopup({item,
                            </Box>
                       </Box>
                       <br></br>
-                      <img
+                      <Button variant="outlined" startIcon={<ShoppingCartCheckout />} onClick={()=> handleRedirect(item)}>
+                      Take me to the website
+                      </Button>
+                     
+                        <Box sx={{ display: 'flex', flexDirection: 'column', marginTop: '20px'}}>
+                        <img
                         src={isLiked ? heartClicked.src : heartOutline.src}
                         onClick={() => toggleLike(item.id)}
                         loading="strict"
                         style={{ width: '3vw', cursor: 'pointer' }}
                         alt="Heart"
                       />
-   
+                          
                        <p>This product has {likes} {likes === 1 ? 'like' : 'likes'}!</p>
-   
+                       </Box>
                       <Box sx={{ bottom: 0, right: 0 }}>
                           <Button
                             variant="outlined"

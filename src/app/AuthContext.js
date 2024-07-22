@@ -35,7 +35,7 @@ const AuthProvider = ({ children }) => {
     }
 
     const refreshToken = async () => {
-
+      
       const response = await fetch(bp.buildPath('api/refresh'), {
           method: 'POST',
           credentials: 'include',
@@ -51,6 +51,20 @@ const AuthProvider = ({ children }) => {
       }
   };
 
+  const logout = async () => {
+    try {
+      setToken("");
+      setUsername("");
+      const response = await fetch(bp.buildPath('api/logout'), {
+        method: 'POST',
+        credentials: 'include',
+        headers: { "Content-Type": "application/json"},
+      });
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
   
     const value = {
       token,
@@ -59,6 +73,7 @@ const AuthProvider = ({ children }) => {
       username,
       setUsername,
       getUsername,
+      logout,
     };
   
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

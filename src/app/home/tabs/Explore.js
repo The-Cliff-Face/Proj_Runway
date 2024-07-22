@@ -11,17 +11,29 @@ import './styles.css';
 import { Connectors } from '/src/app/home/Connectors.js';
 import ListFull from './components/ListFull';
 import ErrorPopup from './components/ErrorPopup';
-import { motion } from 'framer-motion';
-
+import { useRouter } from 'next/navigation';
+import { AuthContext } from '/src/app/AuthContext.js';
 
 export default function Explore() {
 
-  const { toggleLike, fetchComments, postComment, search,comments } = useContext(Connectors);
+  const router = useRouter();
+  const { toggleLike, fetchComments, postComment, search,comments,genderedSearch } = useContext(Connectors);
   const { itemData,isLiked,likes,truncateTitle, setMessage  } = useContext(Connectors);
   const { errorMessage, isErrorPopupOpen, closeErrorPopup,setData  } = useContext(Connectors);
+  const { token, refreshToken, setToken } = useContext(AuthContext);
+  const [ gender, setGender ] = useState("all");
   const [ searchWord, setWord ] = useState(""); 
   
 
+  const genderHandler = () => {
+    if (gender == "all") {
+      setGender("female");
+    } else if (gender=="female") {
+      setGender("male");
+    } else {
+      setGender("all");
+    }
+  }
   
   const popupHandler = async (id) => {
       const dLike = await fetchComments(id);
@@ -33,17 +45,33 @@ export default function Explore() {
       }
   };
   const searchWrapper = async (searchword) => {
-    const data = await search(searchword);
-    setData(data);
+    if (gender == "all") {
+      const data = await search(searchword);
+      setData(data);
+    } else {
+      const data = await genderedSearch(searchWord, 100, gender);
+      setData(data);
+    }
+    
   }
-  /*
+
+  const refresh = async () => {
+    if (!token) {
+      const newToken = await refreshToken();
+      if (!newToken) {
+        router.push('/signin');
+      }
+      setToken(newToken);
+    }
+  }
+  
   React.useEffect(() => {
     const start = () => {
-      setData([]);
+      refresh();
     };
     start();
   }, []);
-  */
+  
   
     
 
@@ -57,6 +85,9 @@ export default function Explore() {
                />
            <TextField id="input-with-sx" label="Search" variant="standard"  onChange={(e) => { setWord(e.target.value); }}/>
            <Button onClick={() => searchWrapper(searchWord)} >Search</Button>
+           <Button onClick={genderHandler}>
+                {gender}
+              </Button>
         </Box>
 
         <ErrorPopup message={errorMessage} open={isErrorPopupOpen} onClose={closeErrorPopup} />

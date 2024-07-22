@@ -8,12 +8,13 @@ import "./styles.css";
 import CssBaseline from '@mui/material/CssBaseline';
 import { motion } from 'framer-motion';
 import gitLogo from "/public/gitLogo.png";
-
+import RunwayAppBar from '../RunwayAppBar';
 
 function AboutUs() {
 
     return (
         <React.Fragment>
+            <RunwayAppBar></RunwayAppBar>
             <CssBaseline />
         
             <Container maxWidth="sm" component="main" style={{ height: '100vh', fontFamily: 'Raleway, Arial, sans-serif' }}>
