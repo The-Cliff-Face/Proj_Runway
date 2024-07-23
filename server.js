@@ -205,12 +205,22 @@ app.post('/api/terminate_reset_password', async (req, res) => {
         return;
     }
 
+    if (!req.body.code) {
+        res.status(200).json({ error: 'No reset code provided' });
+        return;
+    }
+
+    if (!req.body.password) {
+        res.status(200).json({ error: 'No password provided' });
+        return;
+    }
+
     const db = client.db('Runway');
     const users = db.collection('Users');
     let user = await users.findOne({ email: req.body.email });
 
     if (user && user.resetCode) {
-        if (user.resetCode == req.body.code) {
+        if (user.resetCode === req.body.code) {
             // update user's entry in DB with hash of new password
             bcrypt.hash(req.body.password, saltLength, function (err, hash) {
                 users.updateOne({ email: req.body.email },
