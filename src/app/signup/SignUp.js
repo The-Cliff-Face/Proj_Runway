@@ -68,29 +68,7 @@ export default function SignUp() {
   function handleUsernameValidation(e) {
     setUsernameIsValid(validateUsername(e.target.value));
   }
-  const createProfile = async () => {
-
-    var obj = {email:email,username:username};
-    var js = JSON.stringify(obj);
-
-    const response = await fetch(
-      bp.buildPath('api/createProfile'),
-      {
-        method: 'POST',
-        body: js,
-        headers: { 'Content-Type': 'application/json' }
-      }
-
-    );
-    var txt = await response.text();
-    var res = JSON.parse(txt);
-    if (res.hasOwnProperty("error")) {
-      if (res.error != "") {
-        console.log(error);
-      }
-    }
-    
-  }
+  
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -109,7 +87,7 @@ export default function SignUp() {
     });
 
     let js = JSON.stringify(object);
-    console.log(js);
+    
     const response = await fetch(
       bp.buildPath('api/signup'),
       {
@@ -119,7 +97,6 @@ export default function SignUp() {
       }
     );
     let res = JSON.parse(await response.text());
-    setAccessToken(res.accessToken);
 
 
     if (res.error === "") {
@@ -127,7 +104,7 @@ export default function SignUp() {
     } else {
       console.log(res.error);
     }
-    await createProfile();
+   
   };
 
   return (

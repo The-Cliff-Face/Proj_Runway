@@ -15,6 +15,7 @@ const next = require('next');
 const { Worker } = require('worker_threads');
 const crypto = require('crypto');
 const jwt = require("jsonwebtoken");
+const fs = require('fs');
 //const Engine = require('./search_engine/SearchEngine');
 require('dotenv').config();
 
@@ -40,7 +41,7 @@ app.use(cors({
 const { validateEmail } = require('./verification.js');
 const { validateUsername } = require('./verification.js');
 const { validateRecommendationInput } = require('./verification.js');
-const { sendVerificationEmail } = require('./mailgun.js');
+const { sendVerificationEmail, sendResetEmail } = require('./mailgun.js');
 const { sign } = require('jsonwebtoken');
 
 
@@ -106,9 +107,16 @@ app.post('/api/signup', async (req, res) => {
         res.status(200).json({ error: 'Invalid username format' });
         return;
     }
+    
 
     const db = client.db('Runway');
     const users = db.collection('Users');
+
+    const userProfiles = db.collection('userProfiles');
+    const duplicateUser = userProfiles.findOne({email: req.body.email});
+    if (duplicateUser) {
+        res.status(200).json({ error: 'Duplicate User!' });
+    }
 
     bcrypt.hash(req.body.password, saltLength, function (err, hash) {
         if (err) {
@@ -124,8 +132,14 @@ app.post('/api/signup', async (req, res) => {
             newUser.verificationCode,
             newUser.email
         );
+        const db = client.db('Runway');
+        const userProfiles = db.collection('userProfiles');
+    
+        let newProfile = {email: req.body.email, username: req.body.username, hasTakenSurvey: false};
+        userProfiles.insertOne(newProfile);
+
         users.insertOne(newUser);
-        let ret = { accessToken: createAccessToken(req.body.email), error: '' };
+        let ret = { error: '' };
         res.status(200).json(ret);
     });
 });
@@ -141,13 +155,97 @@ app.post('/api/verify_email', async (req, res) => {
         users.updateOne({email: req.body.email},
             { 
                 $set: {"emailIsVerified": true},
-                $set: {"tookSurvey": false}
             }
         );
         
         res.status(200).json({error: ""});
     } else {
         res.status(401).json({error: "Invalid verification code"});
+    }
+});
+
+// There are two steps to resetting a forgotten password.
+// The first is to generate a reset code, store this reset code in the DB, and send it to a user's email.
+
+// The second is to take in an attempted reset code, an email, and a new password.
+// Then, if the provided reset code matches the stored code for the given email,
+// update the user's password to the new password.
+
+// Initiate: generate reset code and send email
+app.post('/api/initiate_reset_password', async (req, res) => {
+    // input JSON: { "email": "forgetfuljoe@gmail.com" }
+    // output JSON: { "error": "applicable error message here" }
+
+    if (!req.body.email) {
+        res.status(200).json({ error: 'No email provided' });
+        return;
+    }
+
+    if (!validateEmail(req.body.email)) {
+        res.status(200).json({ error: 'Invalid email format' });
+        return;
+    }
+
+    const db = client.db('Runway');
+    const users = db.collection('Users');
+    let user = await users.findOne({ email: req.body.email });
+
+    if (user) {
+        let resetCode = getRandomInt(1000, 10000);
+        // unconditionally update, because each reset attempt should create a new reset code
+        users.updateOne({ email: req.body.email },
+            { $set: {"resetCode": resetCode} }
+        );
+        sendResetEmail(resetCode, req.body.email);
+        res.status(200).json({ error: '' });
+    } else {
+        res.status(401).json({ error: 'No account found for provided email' });
+    }
+});
+
+// Terminate: check validity of reset code and set new password
+app.post('/api/terminate_reset_password', async (req, res) => {
+    // input JSON: { "email": "forgetfuljoe@gmail.com", "code": 5689, "password": "newPassword11" }
+    // output JSON: { "error": "applicable error message here" }
+
+    if (!req.body.email) {
+        res.status(200).json({ error: 'No email provided' });
+        return;
+    }
+
+    if (!validateEmail(req.body.email)) {
+        res.status(200).json({ error: 'Invalid email format' });
+        return;
+    }
+
+    if (!req.body.code) {
+        res.status(200).json({ error: 'No reset code provided' });
+        return;
+    }
+
+    if (!req.body.password) {
+        res.status(200).json({ error: 'No password provided' });
+        return;
+    }
+
+    const db = client.db('Runway');
+    const users = db.collection('Users');
+    let user = await users.findOne({ email: req.body.email });
+
+    if (user && user.resetCode) {
+        if (user.resetCode === req.body.code) {
+            // update user's entry in DB with hash of new password
+            bcrypt.hash(req.body.password, saltLength, function (err, hash) {
+                users.updateOne({ email: req.body.email },
+                    { $set: {"password": hash} },
+                );
+                res.status(200).json({ error: '' });
+            });
+        } else {
+            res.status(401).json({ error: 'Invalid reset code' });
+        }
+    } else {
+        res.status(401).json({ error: 'No account found for provided email' });
     }
 });
 
@@ -205,7 +303,12 @@ app.post('/api/getProfile', async (req, res) =>  {
     if (user.liked) {
         likes = user.liked;
     }
-    res.status(200).json({ res: user.username, likes:likes, error: '' });
+    let hasTakenSurvey = false;
+    if (user.hasOwnProperty('hasTakenSurvey')) {
+        hasTakenSurvey = user.hasTakenSurvey;
+    }
+    
+    res.status(200).json({ res: user.username, likes:likes, hasTakenSurvey: hasTakenSurvey, error: '' });
 
 });
 
@@ -226,7 +329,6 @@ app.post('/api/updateRecommendations', async (req, res) => {
         return;
     }
     */
-
     const tokenResult = verifyAndDecodeToken(req);
     if (tokenResult.hasOwnProperty('error')) {
         res.status(401).json({error:tokenResult.error});
@@ -234,10 +336,18 @@ app.post('/api/updateRecommendations', async (req, res) => {
     }
     const db = client.db('Runway');
     const userProfiles = db.collection('userProfiles');
-
-    userProfiles.updateOne({"email":tokenResult.email}, {
+    //console.log(recommendation);
+    await userProfiles.updateOne({"email":tokenResult.email}, {
         $set: {'recommendations': recommendation},
     });
+    // seperate them out because mongodb does not update documents even if one of the parameters does not change
+    // idiotic programming on their part
+    await userProfiles.updateOne({"email":tokenResult.email}, {
+        $set: {'hasTakenSurvey': true},
+    });
+    
+    
+    
 
     res.status(200).json({message:'Success Updated Document!', error: ''});
 
@@ -323,7 +433,8 @@ app.post('/api/getWhatsHot', async (req, res) => {
         }
     }
     scores.sort((a, b) => b.score - a.score);
-    const clothes = db.collection("Clothing");
+    
+    const clothes = db.collection("Clothing_new");
     let ret = [];
     for (let i=0;i<scores.length;i++) {
         const item = await clothes.findOne({'id':scores[i].id});
@@ -349,8 +460,8 @@ app.post('/api/getUserLikes', async (req, res) => {
     }
 
     const likes = user.liked;
-    console.log(likes);
-    console.log(user);
+    
+    
     if (!likes) {
         res.status(200).json({results: [], error:""});
         return;
@@ -375,40 +486,57 @@ app.post('/api/getUserLikes', async (req, res) => {
 });
 
 
-app.post('/api/refresh', async (req, res) => {
-    const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) return res.sendStatus(401);
+app.post('/api/refresh', async (req, res) => { 
+    try {
+        const refreshToken = req.cookies.refreshToken;
+        if (!refreshToken) return res.sendStatus(401);
 
-    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (error, user) => {
-        if (error) return res.sendStatus(403);
-        const accessToken = { accessToken: createAccessToken(user.email) };
-        res.json(accessToken);
-    });
+        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (error, user) => {
+            if (error) return res.sendStatus(403);
+            const accessToken = { accessToken: createAccessToken(user.email) };
+            res.json(accessToken);
+        });
+    } catch (e) {
+        res.sendStatus(500);
+    }
+    
 });
 
+async function grabClothingData() {
+    const filePath = path.join(__dirname+'/search_engine/', 'data.json');
+    if (fs.existsSync(filePath)) {
+        worker.postMessage({type: 'readAndLoadData'});
+        return true;
+    }
+    return false;
+    
 
+}
 
 async function grabData() {
     const db = client.db("Runway");
-    const male_clusters = db.collection("clusters_male");
+    const male_clusters = db.collection("clusters_men_new");
     console.log("grabbing data 1/4");
     const male_clusters_data = await male_clusters.find({}).toArray();
 
-    const female_clusters = db.collection("clusters_female");
+    const female_clusters = db.collection("clusters_women_new");
     console.log("grabbing data 2/4");
     const female_cluster_data = await female_clusters.find({}).toArray();
 
     console.log("grabbing data 3/4");
-    const clusCol = db.collection("clusters");
+    const clusCol = db.collection("clusters_new");
     const clusters = await clusCol.find({}).toArray();
     recommenderWorker.postMessage({type: 'start', task: {clusters, male_clusters_data, female_cluster_data}});
-    
+
+    const hasData = await grabClothingData();
+    if (hasData) {
+        console.log("Using serialized data");
+        return;
+    } 
     console.log("grabbing data 4/4");
-    const collection = db.collection("Clothing");
+    const collection = db.collection("Clothing_new");
     const documents = await collection.find({}).toArray();
     worker.postMessage({ type: 'start' , task: {documents}});
-    
-    
     
 }
  
@@ -453,6 +581,10 @@ app.post('/api/recommend', async (req, res) => {
     const db = client.db('Runway');
     const userProfiles = db.collection('userProfiles');
     let user = await userProfiles.findOne({"email": tokenResult.email});
+    if (!user) {
+        res.status(404).json({ error: 'No user found!' });
+        return;
+    }
     if (!user.recommendations) {
         res.status(200).json({error:"Invalid User Profile!"});
         return;
@@ -567,6 +699,10 @@ app.post('/api/genderedSearch', async (req, res) => {
     const db = client.db('Runway');
     const userProfiles = db.collection('userProfiles');
     let user = await userProfiles.findOne({"email": tokenResult.email});
+    if (!user) {
+        res.status(404).json({ error: 'No user found!' });
+        return;
+    }
     if (!user.recommendations) {
         res.status(200).json({error:"Invalid User Profile!"});
         return;
@@ -611,6 +747,7 @@ async function updateUserRecommendationsBasedOffPost(params) {
     if (typeof recommendation == 'null') {
         return;
     }
+    const modifier = 10;
 
     if (item) {
         const tokens = item.name_processed.split(" ");
@@ -618,9 +755,9 @@ async function updateUserRecommendationsBasedOffPost(params) {
             const word = tokens[i].toLowerCase();
             if (word !== 'gender') {
                 if (recommendation.other.hasOwnProperty(word)) {
-                    recommendation.other[word] += like;
+                    recommendation.other[word] += like * modifier;
                 } else {
-                    recommendation.other[word] = like;
+                    recommendation.other[word] = like * modifier;
                 }
             }
         }
@@ -631,8 +768,6 @@ async function updateUserRecommendationsBasedOffPost(params) {
         $set: {'recommendations': recommendation},
     });
 
-
-    
 
 }
 

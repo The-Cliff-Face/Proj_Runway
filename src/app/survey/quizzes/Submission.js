@@ -16,6 +16,7 @@ export default function Submission({ userRes }) {
     let { token, refreshToken } = useContext(AuthContext);
     const [data, setData] = useState([]);
     const [didSubmit, setBool] = useState(false);
+    const [didSendApiReq, setReq] = useState(false);
 
     const goHome = async () => {
         router.push('/home');
@@ -23,7 +24,10 @@ export default function Submission({ userRes }) {
 
     useEffect(() => {
         const start = () => {
-            updateRecommendations();
+            if (!didSendApiReq) {
+                updateRecommendations(); 
+                setReq(true);
+            }
             
         };
         start();
@@ -88,6 +92,9 @@ export default function Submission({ userRes }) {
                     "authorization": token,
                 }
             });
+            var txt = await response.text();
+            var res = JSON.parse(txt);
+            console.log(res);
             return true;
 
         } catch (error) {

@@ -25,15 +25,15 @@ class Recommender  {
             "female": ["women", "womens", "womans", "women", "woman"],
             "male": ["man", "men", "mens", "manly"],
             "black": ["dark", "charcoal"],
-            "blue": ["indigo", "sky", "navy"],
+            "blue": ["indigo", "navy"],
             "red": ["crimson", "maroon"],
             "yellow": ["gold", "cream", "khaki", "peach", "mustard"],
             "pink": ["magenta", "fuscia", "salmon"],
             "white": ["light", "cream"],
-            "brown": ["khaki", "nude", "tan", "beige", "coffee", "bronze"],
+            "brown": ["khaki", "nude", "tan", "beige", "coffee"],
             "green": ["lime", "army", "olive", "sage", "jade"],
             "purple": ["voilet", "lavender", "mauve"],
-            "orange": ["peach", "coral", "bronze", "salmon"],
+            "orange": ["peach", "coral","salmon"],
             "gray": ["silver", "grey"],
             "teal": ["turquoise", "sea", "blue", "green", "jade"],
             "trousers": ["pants", "corduroy", "bottoms"],
@@ -131,9 +131,9 @@ class Recommender  {
                     const syn = this.synonyms[word][i];
 
                     if (!term_tfid.hasOwnProperty(syn) && this.tfid_dict.hasOwnProperty(syn)) {
-                        term_tfid[syn] = this.tfid_dict[syn] * weight;
+                        term_tfid[syn] = object[word] * weight;
                     } else if (this.tfid_dict.hasOwnProperty(syn)) {
-                        term_tfid[syn] += this.tfid_dict[syn] * weight;
+                        term_tfid[syn] += object[word] * weight;
                     } else {
                         term_tfid[syn] = weight;
                     }
@@ -281,7 +281,7 @@ class Recommender  {
             let score = results[i].score;
             this.inject(this.data[index].values, color_results);
             ret.push({data:this.data[index], score:score});
-            console.log(this.data[index]);
+            
         }
         
         let message = "";

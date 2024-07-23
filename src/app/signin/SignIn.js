@@ -19,6 +19,7 @@ import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import "./styles.css";
 import { AuthContext } from '/src/app/AuthContext.js';
+import LinearProgress from '@mui/material/LinearProgress';
 
 
 export default function SignIn() {
@@ -26,9 +27,11 @@ export default function SignIn() {
   const [showError, willShowError] = useState(false); 
   const [message, setMessage] = useState(''); 
   const { setToken, getUsername } = useContext(AuthContext);
+  const [isLoading ,setLoading] = useState(false);
   var bp = require('/src/app/Path.js');
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setLoading(true);
     const data = new FormData(event.currentTarget);
 
 
@@ -52,6 +55,7 @@ export default function SignIn() {
     if (res.hasOwnProperty('accessToken')) {
       setToken(res.accessToken);
       await getUsername(res.accessToken);
+      setLoading(false);
       router.push('/home');
     }
 
@@ -92,12 +96,14 @@ export default function SignIn() {
             alignItems: 'center',
           }}
         >
+         
           <Avatar sx={{ m: 1, bgcolor: 'secondary.main', boxShadow: '0px 0px 20px rgba(188, 113, 223, 0.9)'}}>
             <LockOutlinedIcon />
           </Avatar>
           <Typography component="h1" variant="h5">
             Sign in
           </Typography>
+          
           
 
           <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
@@ -150,6 +156,8 @@ export default function SignIn() {
     </motion.div>
     <Container sx={{alignItems: 'flex-start', width: '28%', justifyContent: 'center'}}>
         {showError ? <Alert sx={{ mt:1, display:'flex' }} variant="outlined" severity="error">{message}</Alert>: <></>}
+        {isLoading? <LinearProgress />: <></>}
+        
       </Container>
     </Stack>
     

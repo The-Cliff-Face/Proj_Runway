@@ -31,7 +31,8 @@ export default function ProductPopup({item,
   }) {
 
     const handleRedirect = (item) => {
-      window.location.href = item.url;
+      window.open(item.url);
+      //window.location.href = item.url;
     }
     
 
@@ -115,7 +116,7 @@ export default function ProductPopup({item,
    
                       <Box sx={{ backgroundColor: '#473651', padding: '10px' }}>
                            <p>Comments:</p>
-                           <p>{item.id}</p>
+                           
    
                            <Box>
                            {comments.map((comment, index) => (

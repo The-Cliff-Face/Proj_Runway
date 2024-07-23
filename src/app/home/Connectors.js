@@ -460,22 +460,21 @@ const ConnectProvider = ({ children }) => {
                 
                 let resultantItemData = [0,0,0];
                 let clusNames = [];
-                console.log(res.results.ret[0].data);
+                
                 for (let i=0;i< 3;i++) {
                     var _results = res.results.ret[i].data.values;
                     
                     clusNames.push(_results);
                     let searchString = "";
-                    for( var j=0; j<_results.length; j++ )
+                    for( var j=0; j<_results.length & j<5; j++ )
                     {  
                         searchString += _results[j];
                         searchString += " ";
                         
                     }
                     
-                    const entries = await genderedSearch(searchString, 10);
+                    const entries = await genderedSearch(searchString, 100);
                     resultantItemData[i] = entries;
-                    console.log(searchString);
                     
 
                 }

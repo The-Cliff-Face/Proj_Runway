@@ -13,6 +13,9 @@ import ListFull from './components/ListFull';
 import ErrorPopup from './components/ErrorPopup';
 import { useRouter } from 'next/navigation';
 import { AuthContext } from '/src/app/AuthContext.js';
+import FemaleIcon from '@mui/icons-material/Female';
+import MaleIcon from '@mui/icons-material/Male';
+import TransgenderIcon from '@mui/icons-material/Transgender';
 
 export default function Explore() {
 
@@ -23,15 +26,20 @@ export default function Explore() {
   const { token, refreshToken, setToken } = useContext(AuthContext);
   const [ gender, setGender ] = useState("all");
   const [ searchWord, setWord ] = useState(""); 
+  const [ genderIcon, setGenderIcon ] = useState(<TransgenderIcon />);
+
   
 
   const genderHandler = () => {
     if (gender == "all") {
       setGender("female");
+      setGenderIcon(<FemaleIcon />);
     } else if (gender=="female") {
       setGender("male");
+      setGenderIcon(<MaleIcon />);
     } else {
       setGender("all");
+      setGenderIcon(<TransgenderIcon />);
     }
   }
   
@@ -85,7 +93,7 @@ export default function Explore() {
                />
            <TextField id="input-with-sx" label="Search" variant="standard"  onChange={(e) => { setWord(e.target.value); }}/>
            <Button onClick={() => searchWrapper(searchWord)} >Search</Button>
-           <Button onClick={genderHandler}>
+           <Button onClick={genderHandler} startIcon={genderIcon} style={{ marginLeft: '10px' }}>
                 {gender}
               </Button>
         </Box>
