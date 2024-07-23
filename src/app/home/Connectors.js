@@ -3,6 +3,7 @@ import { useState } from "react";
 import { createContext } from "react";
 import { AuthContext } from '/src/app/AuthContext.js';
 import { useContext } from 'react';
+import { ImageSearch } from "@mui/icons-material";
 
 const Connectors = createContext();
 
@@ -35,7 +36,35 @@ const ConnectProvider = ({ children }) => {
     // Constants & Other:
     const max_results = 100;
     var bp = require('/src/app/Path.js');
+
+
+    
     // ---
+
+    const transformUrl = (url) => {
+        console.log(url);
+        if (url.includes("amazon")) {
+            return url;
+        }
+
+        const urlTokens = url.split('/');
+        let newDomain = "https://img.ltwebstatic.com/images3_pi/";
+        try {
+            for (let i=6;i<urlTokens.length;i++) {
+                newDomain+=urlTokens[i];
+                
+                if (i!=9) {
+                    newDomain+="/";
+                }
+            }
+            return newDomain;
+            
+        } catch (e) {
+            console.log(e);
+        }
+        return " ";
+        
+    }
 
 
     
@@ -248,6 +277,10 @@ const ConnectProvider = ({ children }) => {
                 } else {
                     images = [product.images];
                 }
+                for (let k=0;k<images.length;k++) {
+                    images[k] = transformUrl(images[k]);
+                }
+                console.log(images);
                     
                 const image = images;
                 const entry = {
@@ -330,6 +363,9 @@ const ConnectProvider = ({ children }) => {
                 } else {
                     images = [product.images];
                 }
+                for (let k=0;k<images.length;k++) {
+                    images[k] = transformUrl(images[k]);
+                }
                     
                 const image = images;
                 const entry = {
@@ -404,6 +440,10 @@ const ConnectProvider = ({ children }) => {
 
                 } else {
                     images = [product.images];
+                }
+
+                for (let k=0;k<images.length;k++) {
+                    images[k] = transformUrl(images[k]);
                 }
                     
                 const image = images;
