@@ -166,7 +166,6 @@ app.post('/api/verify_email', async (req, res) => {
 
 // There are two steps to resetting a forgotten password.
 // The first is to generate a reset code, store this reset code in the DB, and send it to a user's email.
-
 // The second is to take in an attempted reset code, an email, and a new password.
 // Then, if the provided reset code matches the stored code for the given email,
 // update the user's password to the new password.
@@ -250,7 +249,87 @@ app.post('/api/terminate_reset_password', async (req, res) => {
 });
 
 
+// The second is to take in an attempted reset code, an email, and a new password.
+// Then, if the provided reset code matches the stored code for the given email,
+// update the user's password to the new password.
 
+// Initiate: generate reset code and send email
+app.post('/api/initiate_reset_password', async (req, res) => {
+    // input JSON: { "email": "forgetfuljoe@gmail.com" }
+    // output JSON: { "error": "applicable error message here" }
+
+    if (!req.body.email) {
+        res.status(200).json({ error: 'No email provided' });
+        return;
+    }
+
+    if (!validateEmail(req.body.email)) {
+        res.status(200).json({ error: 'Invalid email format' });
+        return;
+    }
+
+    const db = client.db('Runway');
+    const users = db.collection('Users');
+    let user = await users.findOne({ email: req.body.email });
+    
+    if (user) {
+        let resetCode = getRandomInt(1000, 10000);
+        // unconditionally update, because each reset attempt should create a new reset code
+        users.updateOne({ email: req.body.email },
+            { $set: {"resetCode": resetCode} }
+        );
+        sendResetEmail(resetCode, req.body.email);
+        res.status(200).json({ error: '' });
+    } else {
+        res.status(401).json({ error: 'No account found for provided email' });
+    }
+});
+
+// Terminate: check validity of reset code and set new password
+app.post('/api/terminate_reset_password', async (req, res) => {
+    // input JSON: { "email": "forgetfuljoe@gmail.com", "code": 5689, "password": "newPassword11" }
+    // output JSON: { "error": "applicable error message here" }
+
+    if (!req.body.email) {
+        res.status(200).json({ error: 'No email provided' });
+        return;
+    }
+
+    if (!validateEmail(req.body.email)) {
+        res.status(200).json({ error: 'Invalid email format' });
+        return;
+    }
+
+    if (!req.body.code) {
+        res.status(200).json({ error: 'No reset code provided' });
+        return;
+    }
+
+    if (!req.body.password) {
+        res.status(200).json({ error: 'No password provided' });
+        return;
+    }
+
+    const db = client.db('Runway');
+    const users = db.collection('Users');
+    let user = await users.findOne({ email: req.body.email });
+
+    if (user && user.resetCode) {
+        if (user.resetCode === req.body.code) {
+            // update user's entry in DB with hash of new password
+            bcrypt.hash(req.body.password, saltLength, function (err, hash) {
+                users.updateOne({ email: req.body.email },
+                    { $set: {"password": hash} },
+                );
+                res.status(200).json({ error: '' });
+            });
+        } else {
+            res.status(401).json({ error: 'Invalid reset code' });
+        }
+    } else {
+        res.status(401).json({ error: 'No account found for provided email' });
+    }
+});
 
 app.post('/api/createProfile', async (req, res) =>  {
     // input: email and username
