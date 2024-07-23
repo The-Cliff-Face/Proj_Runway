@@ -422,25 +422,30 @@ app.post('/api/getWhatsHot', async (req, res) => {
         res.status(401).json({results: "", error:tokenResult.error});
         return;
     } 
-    const db = client.db("Runway");
-    const collection = db.collection("comments");
-    const documents = await collection.find({}).toArray();
-    let scores = [];
-    for (let i=0;i<documents.length;i++) {
-        const document = documents[i];
-        if (document.likes) {
-            scores.push({id: document.id, score: document.likes});
+    try {
+        const db = client.db("Runway");
+        const collection = db.collection("comments");
+        const documents = await collection.find({}).toArray();
+        let scores = [];
+        for (let i=0;i<documents.length;i++) {
+            const document = documents[i];
+            if (document.likes) {
+                scores.push({id: document.id, score: document.likes});
+            }
         }
-    }
-    scores.sort((a, b) => b.score - a.score);
+        scores.sort((a, b) => b.score - a.score);
     
-    const clothes = db.collection("Clothing_new");
-    let ret = [];
-    for (let i=0;i<scores.length;i++) {
-        const item = await clothes.findOne({'id':scores[i].id});
-        ret.push(item);
+        const clothes = db.collection("Clothing_new");
+        let ret = [];
+        for (let i=0;i<scores.length;i++) {
+            const item = await clothes.findOne({'id':scores[i].id});
+            ret.push(item);
+        }
+        res.status(200).json({results: ret, error:""});
+    } catch (e) {
+        res.status(500).json({results: [], error:e});
     }
-    res.status(200).json({results: ret, error:""});
+    
 
 });
 

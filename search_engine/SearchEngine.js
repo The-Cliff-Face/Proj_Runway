@@ -1,6 +1,9 @@
 const { stopwords } = require('stopword');
 const { closest } = require('fastest-levenshtein');
 const { parentPort } = require('worker_threads');
+const fs = require('fs');
+const path = require('path');const { type } = require('os');
+;
 
 
 class Synonyms {
@@ -63,9 +66,34 @@ class Engine {
         this.vectorize_dict = [];
         this.total_num = 0;
         this.synonyms = new Synonyms();
-
-
+        this.filePath = path.join(__dirname, 'data.json');
+        this.loadedFromMemory = false;
     }
+    
+    save() {
+    
+        fs.writeFile(this.filePath, JSON.stringify(this.data, null, 2), (err) => {
+            if (err) {
+                console.log(err);
+            }
+            console.log("File saved");
+        });
+    }
+
+    async read() {
+        return new Promise((resolve, reject) => {
+          fs.readFile(this.filePath, 'utf8', (err, data) => {
+            if (err) {
+              reject(err);  // Reject the promise if there is an error
+            } else {
+              this.data = data;
+              this.loadedFromMemory = true;
+              resolve(data);  // Resolve the promise with the data
+            }
+          });
+        });
+      }
+    
 
     tokenizer(term) {
         const stopWords = new Set(stopwords); 
@@ -77,10 +105,14 @@ class Engine {
         return closest(term,words);
     }
 
-    start(data) {
+    start(data, doesSave=false) {
         this.data = data;
         this.preprocess_count();
         this.tfid_fit_transform();
+        if (doesSave && !this.loadedFromMemory) {
+            console.log("saving");
+            this.save();
+        }
     }
     // https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html#sklearn.feature_extraction.text.CountVectorizer
     preprocess_count() { 
@@ -217,6 +249,9 @@ class Engine {
 
         });
     }
+    searchById(id) {
+        return this.data[id];
+    }
 
     search(term, max_results) {
 
@@ -254,9 +289,12 @@ class Engine {
 
 }
 
+
 function seperate(data) {
     let male_data = [];
     let female_data = [];
+
+    
     data.forEach((row) => {
         const gender = row.gender;
         
@@ -272,15 +310,14 @@ function seperate(data) {
 }
 
 
-
 const engine = new Engine();
 const male_clothing_engine = new Engine();
 const female_clothing_engine = new Engine();
 
-parentPort.on('message', (msg) => {
+parentPort.on('message', async (msg) => {
     if (msg.type === 'start') {
         const { documents } = msg.task;
-        engine.start(documents);
+        engine.start(documents,true);
         const {female_data, male_data } = seperate(documents);
         male_clothing_engine.start(male_data);
         female_clothing_engine.start(female_data);
@@ -330,10 +367,31 @@ parentPort.on('message', (msg) => {
             } else {
                 const result = engine.search(field,max_results);
                 parentPort.postMessage({ type: `queryGendered+${id}`, result });
-            }
-            
-            
+            }  
         }
+    } else if (msg.type === "readAndLoadData") {
+        const result = await engine.read();
+        
+        if (!result) {
+            console.log("failed!");
+            parentPort.postMessage({ type: 'failedReadingData' });
+            return;
+        }
+        const documents = JSON.parse(result);
+        
+        const {female_data, male_data } = seperate(documents);
+        male_clothing_engine.start(male_data);
+        female_clothing_engine.start(female_data);
+        engine.start(documents);
+        
+        parentPort.postMessage({ type: 'loaded' });
+
+
+
+    } else if (msg.type === "idSearch") {
+        const { reqId, id } = msg.task;
+        const result = engine.searchById(id);
+        parentPort.postMessage({ type: `idSearch+${reqId}`, result });
 
     }
     
