@@ -17,7 +17,7 @@ import './styles.css';
 export default function WhatsHot() {
 
   const { toggleLike, fetchComments, postComment, comments, setMessage } = useContext(Connectors)
-  const { whatisHotData,isLiked,likes,truncateTitle,grabWhatsHot  } = useContext(Connectors);
+  const { whatisHotData,isLiked,likes,truncateTitle, grabWhatsHot  } = useContext(Connectors);
   const [ isLoading, setLoading ] = useState(true);
 
   const popupHandler = async (id) => {
@@ -36,18 +36,40 @@ export default function WhatsHot() {
     }
 
   }
-  useEffect(() => {
-    const start = () => {
-      if (whatisHotData.length == 0) {
-        grabWrapper();
-      } else {
-        setLoading(false);
+  const grabProfile = async () => {
+    try {
+      if (!token) {
+        const newToken = await refreshToken();
+        token = newToken;
       }
+      const response = await fetch(bp.buildPath('api/getProfile'),
+      {method:'POST',
+          headers:{
+            'Content-Type': 'application/json',
+            "authorization": token,
+      }});
+      var txt = await response.text();
+      var res = JSON.parse(txt);
+      if (res.hasOwnProperty('hasTakenSurvey')) {
+        if (!res.hasTakenSurvery) {
+          router.push('/survey');
+        }
+      }
+
       
+    } catch (e) {
+      console.log(e);
+    }
+  }
+  React.useEffect(() => {
+    const start = () => {
+      grabWrapper();
       
     };
     start();
   }, []);
+
+  
 
 //<Button onClick={()=>search("shirts")} >Search</Button>
 

@@ -14,6 +14,8 @@ import RunwayAppBar from '../RunwayAppBar';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import ExploreIcon from '@mui/icons-material/Explore';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import { AuthContext } from '../AuthContext';
+import { useRouter } from 'next/navigation';
 
 function CustomTabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -47,16 +49,58 @@ function a11yProps(index) {
 
 export default function Home() {
   const [value, setValue] = React.useState(1);
+  const router = useRouter();
   
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
   
   const [isClicked, setIsClicked] = useState(false);
+  const { refreshToken } = React.useContext(AuthContext);
+  let { token } = React.useContext(AuthContext);
+  var bp = require('/src/app/Path.js');
   
   const handleClick = () => {
     setIsClicked(!isClicked); 
   };
+
+  const grabProfile = async () => {
+    try {
+      if (!token) {
+        const newToken = await refreshToken();
+        token = newToken;
+      }
+      const response = await fetch(bp.buildPath('api/getProfile'),
+      {method:'POST',
+          headers:{
+            'Content-Type': 'application/json',
+            "authorization": token,
+      }});
+      var txt = await response.text();
+      var res = JSON.parse(txt);
+      const didTakeSurvey = res.hasTakenSurvey;
+      console.log(res);
+      if (res.hasOwnProperty('hasTakenSurvey')) {
+        if (!didTakeSurvey) {
+
+          router.push('/survey');
+        } else {
+          console.log(didTakeSurvey);
+        }
+      }
+
+      
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  React.useEffect(() => {
+    const start = () => {
+      grabProfile();
+    };
+    start();
+  }, []);
 
 
   return (
