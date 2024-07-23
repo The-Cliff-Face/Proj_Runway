@@ -43,6 +43,7 @@ function Welcome() {
             >
                 <p1>Welcome to</p1>
                 <img
+                    alt="Runway"
                     src={Logo.src}
                     loading="lazy"
                 />
