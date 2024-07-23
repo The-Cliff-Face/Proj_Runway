@@ -51,6 +51,31 @@ export default function Profile() {
 
   }
 
+  const transformUrl = (url) => {
+    console.log(url);
+    if (url.includes("amazon")) {
+        return url;
+    }
+
+    const urlTokens = url.split('/');
+    let newDomain = "https://img.ltwebstatic.com/images3_pi/";
+    try {
+        for (let i=6;i<urlTokens.length;i++) {
+            newDomain+=urlTokens[i];
+            
+            if (i!=9) {
+                newDomain+="/";
+            }
+        }
+        return newDomain;
+        
+    } catch (e) {
+        console.log(e);
+    }
+    return " ";
+    
+}
+
   const refresh = () => {
     if (!username) {
       username = getUsername();
@@ -117,6 +142,9 @@ export default function Profile() {
             } else {
                 images = [product.images];
             }
+            for (let k=0;k<images.length;k++) {
+              images[k] = transformUrl(images[k]);
+            }
                 
             const image = images;
             const entry = {
@@ -134,6 +162,7 @@ export default function Profile() {
     }
     
   };
+  
 
   const openSurvey = async () => {
     router.push('/survey');
