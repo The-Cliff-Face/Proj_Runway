@@ -211,10 +211,13 @@ app.post('/api/terminate_reset_password', async (req, res) => {
 
     if (user && user.resetCode) {
         if (user.resetCode == req.body.code) {
-            users.updateOne({ email: req.body.email },
-                { $set: {"password": req.body.password} }
-            );
-            res.status(200).json({ error: '' });
+            // update user's entry in DB with hash of new password
+            bcrypt.hash(req.body.password, saltLength, function (err, hash) {
+                users.updateOne({ email: req.body.email },
+                    { $set: {"password": hash} },
+                );
+                res.status(200).json({ error: '' });
+            });
         } else {
             res.status(401).json({ error: 'Invalid reset code' });
         }
