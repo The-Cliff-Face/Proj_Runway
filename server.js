@@ -468,9 +468,13 @@ app.post('/api/signin', async (req, res) => {
         res.status(200).json({ error: 'No user found!' });
         return;
     }
+    // Add check that email is verified - Leinecker specifically called a group out on this point
+    if (!user.emailIsVerified) {
+        res.status(200).json({ error: 'Please verify your email before signing in' });
+    }
+
     // compare user.password (which is hashed) to the hash of the
     // password sent to this API endpoint
-
     bcrypt.compare(req.body.password, user.password, function (err, bRes) {
         if (bRes) {
             
