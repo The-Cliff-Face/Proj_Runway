@@ -167,6 +167,8 @@ const ConnectProvider = ({ children }) => {
       const fetchComments = async (id) => {
         if (!id) return;
 
+        setComments([]);
+
         if (!token) {
             const newToken = await refreshToken();
             token = newToken;
@@ -176,6 +178,7 @@ const ConnectProvider = ({ children }) => {
             username = user;
             setUsername(user);
         }
+        
 
         
         var obj = { id: id };
