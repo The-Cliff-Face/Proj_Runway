@@ -4,7 +4,7 @@ const nextConfig = {
         return [
             {
                 source: '/api/:slug*',
-                destination: 'https://projectrunway.tech:3001/api/:slug*'
+                destination: 'http://localhost:3001/api/:slug*'
             }
         ];
     },
