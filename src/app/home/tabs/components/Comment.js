@@ -28,7 +28,6 @@ export default function Comment({ message, username, actualUsername, index, prod
                 }
             });
             var txt = await response.text();
-            console.log(txt);
             setMessageToDisplay(newMessage);
             setEditable(false);
 
