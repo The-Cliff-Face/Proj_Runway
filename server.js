@@ -116,6 +116,7 @@ app.post('/api/signup', async (req, res) => {
     const duplicateUser = userProfiles.findOne({email: req.body.email});
     if (duplicateUser) {
         res.status(200).json({ error: 'Duplicate User!' });
+        return;
     }
 
     bcrypt.hash(req.body.password, saltLength, function (err, hash) {
