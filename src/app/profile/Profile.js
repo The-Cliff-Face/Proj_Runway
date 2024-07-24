@@ -21,8 +21,9 @@ import surveyIcon from "/public/surveyIcon.png";
 import { useRouter } from 'next/navigation';
 import FavoritesPopup from './FavoritesPopup';
 import { Connectors } from '/src/app/home/Connectors.js';
+import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
 import Cookies from 'js-cookie';
-
 
 import "./styles.css";
 
@@ -43,6 +44,17 @@ export default function Profile() {
   const [ localUsername, setLocalUsername] = React.useState("");
   const [data, setData] = useState([]);
   const [isLoading, setLoading] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+
+  const passwordStrengthDescriptions = [
+    'very weak', 'weak', 'medium', 'strong', 'very strong'
+  ];
+
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordMatch, setPasswordMatch] = useState(false);
+  const [attemptClose, setAttemptClose] = useState(false);
 
   const logoutHandler = async () => {
     setToken("");
@@ -168,6 +180,10 @@ export default function Profile() {
     router.push('/survey');
   };
 
+  const openReset = async () => {
+    router.push('/reset');
+  };
+
   const openPopup = async () => {
     try {
       setData([]);
@@ -181,6 +197,43 @@ export default function Profile() {
     }
     
   };
+
+  const openResetPopup = () => {
+    setResetOpen(true);
+    resetPasswordState();
+  };
+
+  const resetPasswordState = () => {
+    setPassword('');
+    setConfirmPassword('');
+    setPasswordMatch(false);
+    setAttemptClose(false);
+  };
+
+  const handlePasswordValidation = (e) => {
+    let password = e.target.value;
+    let zxcvbn = require('zxcvbn');
+    let score = zxcvbn(password).score;
+
+    setPasswordStrength(score);
+    setPassword(password);
+    setPasswordMatch(password === confirmPassword);
+  }
+
+  const handleConfirmPasswordChange = (e) => {
+    let confirmPassword = e.target.value;
+    setConfirmPassword(confirmPassword);
+    setPasswordMatch(password === confirmPassword);
+  }
+
+  const handleCloseAttempt = () => {
+    if (!passwordMatch) {
+      setAttemptClose(true);
+      setTimeout(() => setAttemptClose(false), 500);
+    } else {
+      setResetOpen(false);
+    }
+  }
 
   return (
     <Stack direction="column" sx={{ justifyContent: 'center' }}>
@@ -246,7 +299,7 @@ export default function Profile() {
             <br></br>
             <br></br>
 
-            <Link variant="body2" className="body2">
+            <Link variant="body2" className="body2" onClick={openReset}>
               Reset Password?
             </Link>
 
@@ -278,6 +331,73 @@ export default function Profile() {
 
         >
         </FavoritesPopup>
+
+        <Popup open={resetOpen} onClose={() => setResetOpen(false)} modal nested>
+          <motion.div
+            initial={{ opacity: 0, y: -60 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div
+              style={{
+                padding: '20px',
+                backgroundColor: 'black',
+                width: '40vw',
+                height: '25vw',
+                overflowY: 'auto',
+                color: 'white',
+                boxShadow: '0px 0px 70vw rgba(188, 113, 223, 0.6)',
+                border: '2px solid rgba(188, 113, 223, 1)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+
+              <Typography component="h1" variant="h5" className="h1">
+                Reset Password
+              </Typography>
+
+              <Box component="form" noValidate sx={{ mt: 1 }}>
+                <Tooltip title={passwordStrengthDescriptions[passwordStrength]} placement="right" arrow>
+                  <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    label="Enter new password"
+                    onChange={handlePasswordValidation}
+                    type="password"
+                  />
+                </Tooltip>
+                <Tooltip title={passwordStrengthDescriptions[passwordStrength]} placement="right" arrow>
+                  <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    label="Re-enter new password"
+                    onChange={handleConfirmPasswordChange}
+                    type="password"
+                  />
+                </Tooltip>
+                <Typography
+                  variant="body2"
+                  color={passwordMatch ? "green" : "red"}
+                  align="center"
+                  sx={{ mt: 2, animation: attemptClose && !passwordMatch ? 'wobble 0.5s ease' : 'none' }}
+                  >
+                    {passwordMatch ? "Passwords match" : "Passwords do not match"}
+                  </Typography>
+                </Box>
+  
+                <Button
+                  onClick={handleCloseAttempt}
+                  variant="outlined"
+                  style={{ maxWidth: '20vw', alignSelf: 'center', mt: 2 }}
+                >
+                  Reset
+                </Button>
+              </div>
+            </motion.div>
+          </Popup>
         
       </motion.div>
     </Stack>
