@@ -20,7 +20,9 @@ export default function ListFull({itemData,comments,popupHandler,
     setWhatToExpand,
     setMessage,
     shadowColor,
+    username,
     borderColor
+    
 
 }) {
 
@@ -53,6 +55,7 @@ export default function ListFull({itemData,comments,popupHandler,
                     setMessage={setMessage}
                     borderColor={borderColor}
                     shadowColor={shadowColor}
+                    username={username}
                     ></ProductPopup>
               ))}
             </ImageList>: <></>}

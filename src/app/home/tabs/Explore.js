@@ -23,7 +23,7 @@ export default function Explore() {
   const { toggleLike, fetchComments, postComment, search,comments,genderedSearch } = useContext(Connectors);
   const { itemData,isLiked,likes,truncateTitle, setMessage  } = useContext(Connectors);
   const { errorMessage, isErrorPopupOpen, closeErrorPopup,setData  } = useContext(Connectors);
-  const { token, refreshToken, setToken } = useContext(AuthContext);
+  const { token, refreshToken, setToken, username, getUsername } = useContext(AuthContext);
   const [ gender, setGender ] = useState("all");
   const [ searchWord, setWord ] = useState(""); 
   const [ genderIcon, setGenderIcon ] = useState(<TransgenderIcon />);
@@ -71,6 +71,9 @@ export default function Explore() {
       }
       setToken(newToken);
     }
+    if (!username) {
+      await getUsername();
+    }
   }
   
   React.useEffect(() => {
@@ -113,6 +116,7 @@ export default function Explore() {
             truncateTitle={truncateTitle}
             isExpanded={false}
             setMessage={setMessage}
+            username={username}
             borderColor="rgba(255, 255, 255, 1)"
             shadowColor="rgba(255, 255, 255, 0.6)"
 
