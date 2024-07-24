@@ -210,6 +210,7 @@ export default function Profile() {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
+              gap: 'clamp(45px, 1.5vw, 52px)',
             }}
           >
             <img
@@ -222,9 +223,6 @@ export default function Profile() {
               {localUsername}
             </Typography>
 
-            <br></br>
-            <br></br>
-
             <Button
                 variant="outlined"
                 onClick={openPopup}
@@ -232,10 +230,6 @@ export default function Profile() {
               >
                 View your Favorites
               </Button>
-
-            <br></br>
-            <br></br>
-            <br></br>
 
             <Button
                 variant="outlined"
@@ -245,15 +239,9 @@ export default function Profile() {
                 Retake Survey
             </Button>
 
-            <br></br>
-            <br></br>
-            <br></br>
-
             <Link variant="body2" className="body2" onClick={openReset} style={{ cursor: 'pointer' }}>
               Reset Password?
             </Link>
-
-            <br></br>
 
             <Link variant="body2" className="body2" onClick={logoutHandler} >
               Logout
