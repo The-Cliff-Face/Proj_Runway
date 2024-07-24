@@ -14,6 +14,7 @@ import { useEffect } from 'react';
 import ErrorPopup from './components/ErrorPopup';
 import loader from '/public/loading.gif';
 import { motion } from 'framer-motion';
+import { AuthContext } from '@/app/AuthContext';
 
 export default function ForYou() {
 
@@ -23,13 +24,19 @@ export default function ForYou() {
   const { errorMessage, isErrorPopupOpen, closeErrorPopup  } = useContext(Connectors);
   const [ whatToExpand, setWhatToExpand ] = useState(0);
   const [ isLoading, setLoading ] = useState(true);
+  const { username ,getUsername} = useContext(AuthContext);
 
   const retrieve = async () => {
+    if (!username) {
+      await getUsername();
+    }
+    
     const re = await grabRecommendedClusters();
     if (re) {
       setLoading(false);
       
     }
+    
   };
 
   useEffect(() => {
@@ -77,6 +84,7 @@ export default function ForYou() {
           whatToExpand = {whatToExpand}
           setWhatToExpand={setWhatToExpand}
           setMessage={setMessage}
+          username={username}
           borderColor="rgba(188, 114, 223, 1)"
           shadowColor="rgba(188, 114, 223, 0.6)"
         >
@@ -97,6 +105,7 @@ export default function ForYou() {
           whatToExpand = {whatToExpand}
           setWhatToExpand={setWhatToExpand}
           truncateTitle={truncateTitle}
+          username={username}
           borderColor= {"rgba(188, 114, 223, 1)"}
           shadowColor= {"rgba(188, 114, 223, 0.6)"}
 

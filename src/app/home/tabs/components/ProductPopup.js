@@ -15,7 +15,7 @@ import heartOutline from "/public/heartOutline.png";
 import heartClicked from "/public/heartClicked.png";
 import { motion } from 'framer-motion';
 import { ShoppingCartCheckout } from '@mui/icons-material';
-
+import Comment from './Comment';
 
 export default function ProductPopup({item,
   comments,
@@ -27,6 +27,7 @@ export default function ProductPopup({item,
   likes,
   truncateTitle,
   borderColor,
+  username,
   shadowColor
   }) {
 
@@ -120,9 +121,15 @@ export default function ProductPopup({item,
    
                            <Box>
                            {comments.map((comment, index) => (
-                                   <p key={index}>
-                                   <span style={{ fontWeight: 'bold', color: '#BC72DF' }}>{comment.username}</span> : {comment.message}
-                                   </p>
+                                   <Comment 
+                                   message={comment.message} 
+                                   username={comment.username} 
+                                   actualUsername={username} 
+                                   index={index}
+                                   productId={item.id}
+                                   >
+
+                                   </Comment>
                            ))} 
                            </Box>
                            <Box

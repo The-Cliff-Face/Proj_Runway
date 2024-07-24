@@ -11,6 +11,7 @@ import { Connectors } from '/src/app/home/Connectors.js'
 import ListFull from './components/ListFull';
 import loader from '/public/loading.gif';
 import './styles.css';
+import { AuthContext } from '@/app/AuthContext';
 
 
 
@@ -19,6 +20,7 @@ export default function WhatsHot() {
   const { toggleLike, fetchComments, postComment, comments, setMessage } = useContext(Connectors)
   const { whatisHotData,isLiked,likes,truncateTitle, grabWhatsHot  } = useContext(Connectors);
   const [ isLoading, setLoading ] = useState(true);
+  const { username, getUsername } = useContext(AuthContext);
 
   const popupHandler = async (id) => {
     const dLike = await fetchComments(id);
@@ -30,37 +32,17 @@ export default function WhatsHot() {
     }
   };
   const grabWrapper = async () => {
+
+    if (!username) {
+      await getUsername();
+    }
     const re = await grabWhatsHot();
     if (re) {
       setLoading(false);
     }
 
   }
-  const grabProfile = async () => {
-    try {
-      if (!token) {
-        const newToken = await refreshToken();
-        token = newToken;
-      }
-      const response = await fetch(bp.buildPath('api/getProfile'),
-      {method:'POST',
-          headers:{
-            'Content-Type': 'application/json',
-            "authorization": token,
-      }});
-      var txt = await response.text();
-      var res = JSON.parse(txt);
-      if (res.hasOwnProperty('hasTakenSurvey')) {
-        if (!res.hasTakenSurvery) {
-          router.push('/survey');
-        }
-      }
-
-      
-    } catch (e) {
-      console.log(e);
-    }
-  }
+  
   React.useEffect(() => {
     const start = () => {
       grabWrapper();
@@ -90,6 +72,7 @@ export default function WhatsHot() {
           likes={likes}
           truncateTitle={truncateTitle}
           isExpanded={false}
+          username={username}
           setMessage={setMessage}
           borderColor= {"#d6b36c"}
           shadowColor= {"#d6b36c99"}

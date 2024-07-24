@@ -42,7 +42,6 @@ const ConnectProvider = ({ children }) => {
     // ---
 
     const transformUrl = (url) => {
-        console.log(url);
         if (url.includes("amazon")) {
             return url;
         }
@@ -198,6 +197,7 @@ const ConnectProvider = ({ children }) => {
             }
             var _results = res.ret.comments;
             let l = res.likes;
+            console.log(res);
             if (!res.likes) {
                 l = 0;
             }
@@ -205,7 +205,7 @@ const ConnectProvider = ({ children }) => {
             let usersThatLiked = res.usersLiked;
             if (!usersThatLiked) {
                 usersThatLiked = [];
-            }
+            } 
             if (usersThatLiked.includes(username)) {
                 didL = true;
             } 
@@ -506,7 +506,7 @@ const ConnectProvider = ({ children }) => {
                     
                     clusNames.push(_results);
                     let searchString = "";
-                    for( var j=0; j<_results.length & j<5; j++ )
+                    for( var j=0; j<_results.length & j<4; j++ )
                     {  
                         searchString += _results[j];
                         searchString += " ";

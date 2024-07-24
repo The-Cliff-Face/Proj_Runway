@@ -19,6 +19,7 @@ export default function ListCategory({itemData,comments,popupHandler,
     whatToExpand,
     setWhatToExpand,
     setMessage,
+    username,
     borderColor,
     shadowColor
 
@@ -67,6 +68,7 @@ export default function ListCategory({itemData,comments,popupHandler,
                     shadowColor={shadowColor}
                     borderColor={borderColor}
                     setMessage={setMessage}
+                    username={username}
                     ></ProductPopup>
               ))}
             </ImageList>
@@ -89,6 +91,7 @@ export default function ListCategory({itemData,comments,popupHandler,
                     shadowColor={shadowColor}
                     borderColor={borderColor}
                     truncateTitle={truncateTitle}
+                    username={username}
                     ></ProductPopup>
               ))}
             </ImageList>
@@ -110,6 +113,7 @@ export default function ListCategory({itemData,comments,popupHandler,
                     shadowColor={shadowColor}
                     borderColor={borderColor}
                     setMessage={setMessage}
+                    username={username}
                     ></ProductPopup>
               ))}
             </ImageList>
