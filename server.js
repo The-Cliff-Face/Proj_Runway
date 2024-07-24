@@ -11,7 +11,6 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser')
 const path = require('path');
-const next = require('next');
 const { Worker } = require('worker_threads');
 const crypto = require('crypto');
 const jwt = require("jsonwebtoken");
@@ -476,6 +475,7 @@ app.post('/api/signin', async (req, res) => {
     // Add check that email is verified - Leinecker specifically called a group out on this point
     if (!user.emailIsVerified) {
         res.status(200).json({ error: 'Please verify your email before signing in' });
+        return;
     }
 
     // compare user.password (which is hashed) to the hash of the
