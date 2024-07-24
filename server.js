@@ -45,7 +45,7 @@ const { sendVerificationEmail, sendResetEmail } = require('./mailgun.js');
 const { sign } = require('jsonwebtoken');
 
 
-
+// helper function i made to remove elements from an array
 function remove(arr, value) {
     var index = arr.indexOf(value);
     if (index > -1) {
@@ -113,8 +113,8 @@ app.post('/api/signup', async (req, res) => {
     const users = db.collection('Users');
 
     const userProfiles = db.collection('userProfiles');
-    const duplicateUser = userProfiles.findOne({email: req.body.email});
-    if (duplicateUser) {
+    const duplicateUser = await userProfiles.findOne({email: req.body.email});
+    if (duplicateUser != null) {
         res.status(200).json({ error: 'Duplicate User!' });
         return;
     }
@@ -335,7 +335,8 @@ app.post('/api/terminate_reset_password', async (req, res) => {
 });
 
 app.post('/api/createProfile', async (req, res) =>  {
-    // input: email and username
+    // input JSON: { "email": "forgetfuljoe@gmail.com", "username": "joe"}
+    // output JSON: { ret: {userProfile object} "error": "applicable error message here" }
     const tokenResult = verifyAndDecodeToken(req);
     if (tokenResult.hasOwnProperty('error')) {
         res.status(401).json({results: "", error:tokenResult.error});
@@ -345,15 +346,20 @@ app.post('/api/createProfile', async (req, res) =>  {
     const {email, username} = req.body;
     if (!email) {
         res.status(200).json({results: "", error:"No email provided"});
+        return;
     } 
     if (!username) {
         res.status(200).json({results: "", error:"No username provided"});
+        return;
     }  
     const db = client.db('Runway');
     const userProfiles = db.collection('userProfiles');
-    
-    
     let newUser = req.body;
+    const tmp = await userProfiles.findOne({email: email})
+    if (tmp != null) {
+        res.status(200).json({results: "", error:"Profile already created!"});
+        return;
+    }
     userProfiles.insertOne(newUser);
     let ret = { ret: newUser, error: '' };
     res.status(200).json(ret);
@@ -361,8 +367,9 @@ app.post('/api/createProfile', async (req, res) =>  {
 
 
 app.post('/api/getProfile', async (req, res) =>  {
+    // input JSON: { "email": "forgetfuljoe@gmail.com"}
+    // output JSON: { ret: {userProfile object} "error": "applicable error message here" }
     let { email } = req.body;
-    
 
     const tokenResult = verifyAndDecodeToken(req);
     if (tokenResult.hasOwnProperty('error')) {
@@ -393,8 +400,6 @@ app.post('/api/getProfile', async (req, res) =>  {
     res.status(200).json({ res: user.username, likes:likes, hasTakenSurvey: hasTakenSurvey, error: '' });
 
 });
-
-
 
 
 app.post('/api/updateRecommendations', async (req, res) => {
@@ -428,14 +433,13 @@ app.post('/api/updateRecommendations', async (req, res) => {
         $set: {'hasTakenSurvey': true},
     });
     
-    
-    
 
     res.status(200).json({message:'Success Updated Document!', error: ''});
 
 });
 
 app.post('/api/logout', (req, res) => {
+    // Logs out the user
     res.clearCookie('refreshToken', {
       path: '/',
       sameSite: 'strict',
@@ -499,6 +503,8 @@ app.post('/api/signin', async (req, res) => {
 });
 
 app.post('/api/getWhatsHot', async (req, res) => {
+    // output json:
+    // { "ret": [productEntry], "error": [ERROR MESSAGE] }
     const tokenResult = verifyAndDecodeToken(req);
     if (tokenResult.hasOwnProperty('error')) {
         res.status(401).json({results: "", error:tokenResult.error});
@@ -528,7 +534,6 @@ app.post('/api/getWhatsHot', async (req, res) => {
         res.status(500).json({results: [], error:e});
     }
     
-
 });
 
 app.post('/api/getUserLikes', async (req, res) => {
@@ -539,7 +544,7 @@ app.post('/api/getUserLikes', async (req, res) => {
     } 
     const db = client.db("Runway");
     const userProfiles = db.collection('userProfiles');
-    const Clothing = db.collection("Clothing");
+    const Clothing = db.collection("Clothing_new");
     let user = await userProfiles.findOne({"email": tokenResult.email});
     if (!user) {
         res.status(404).json({results: [], error:"cant find user"});
@@ -547,7 +552,6 @@ app.post('/api/getUserLikes', async (req, res) => {
     }
 
     const likes = user.liked;
-    
     
     if (!likes) {
         res.status(200).json({results: [], error:""});
@@ -690,7 +694,14 @@ app.post('/api/recommend', async (req, res) => {
 });
 
 
+
+
 app.post('/api/spellcheck', async (req, res) => {
+    // input json:
+    // { "word": "jeens" }
+    // output json:
+    // { "results": "jeans", "error": [ERROR MESSAGE] }
+    // compares the misspelled word with the closest match in the dataset, not true spell check!!!
     const { word } = req.body;
 
     const tokenResult = verifyAndDecodeToken(req);
@@ -706,7 +717,7 @@ app.post('/api/spellcheck', async (req, res) => {
             ret = msg.result;
             if (ret=== "") {
                 let ret = {word:"", error:"Closest match not found"}
-                res.status(404,ret);
+                res.status(404).json({ret});
                 
             } else {
                 res.status(200).json({results: ret, error:""});
@@ -743,6 +754,14 @@ function verifyAndDecodeToken(req) {
 
 //https://www.geeksforgeeks.org/how-to-implement-jwt-authentication-in-express-js-app/
 app.post('/api/search', async (req, res) => {
+    // input json:
+    // { "search": "jeans", max_results: 100 }
+    // output json:
+    // { "results": [Products], "error": [ERROR MESSAGE] }
+    // searches using the Search Engine Worker
+    // error code: 200: found results
+    // error code: 404: did not find anything with the search term
+    // error code: 500: either the server crashed or the worker is not ready yet
 
     const { search, max_results } = req.body;
 
@@ -774,6 +793,15 @@ app.post('/api/search', async (req, res) => {
 });
 
 app.post('/api/genderedSearch', async (req, res) => {
+    // input json:
+    // { "search": "jeans", max_results: 100, type: "male" }
+    // output json:
+    // { "results": [Products], "error": [ERROR MESSAGE] }
+    // searches using the Search Engine Worker with Gender Settings
+    // Note that "type" is option, if its not provided, the gender will be accessed through the user profile
+    // error code: 200: found results
+    // error code: 404: did not find anything with the search term, or type not provided and userprofile not found
+    // error code: 500: either the server crashed or the worker is not ready yet
 
     const { search, max_results, type } = req.body;
     
@@ -824,6 +852,11 @@ app.post('/api/genderedSearch', async (req, res) => {
     
 });
 
+/**
+ * updates recommendations to better fit the user interests
+ * @param {object} params object
+ * @returns { Void } nothing
+ */
 async function updateUserRecommendationsBasedOffPost(params) {
     const { id, like, userProfiles, tokenResult, user } = params;
     const db = client.db('Runway');
@@ -834,6 +867,7 @@ async function updateUserRecommendationsBasedOffPost(params) {
     if (typeof recommendation == 'null') {
         return;
     }
+    // this can be set to anything
     const modifier = 10;
 
     if (item) {
@@ -850,7 +884,6 @@ async function updateUserRecommendationsBasedOffPost(params) {
         }
 
     }
-    
     userProfiles.updateOne({"email": tokenResult.email}, {
         $set: {'recommendations': recommendation},
     });
@@ -858,7 +891,11 @@ async function updateUserRecommendationsBasedOffPost(params) {
 
 }
 
-
+/**
+ * updates likes in the profile
+ * @param {object} params object
+ * @returns { Void } nothing
+ */
 function updateUserLikes(params) {
     const { id, like, userProfiles, tokenResult, user } = params;
     if (!user.liked && like>0) {
@@ -884,6 +921,11 @@ function updateUserLikes(params) {
     return true;
 }
 
+/**
+ * updates likes in the product document
+ * @param {object} params object
+ * @returns { Void } nothing
+ */
 async function updateDocumentLikes(params) {
     const { id, like, tokenResult, comments,user } = params;
     
@@ -917,9 +959,13 @@ async function updateDocumentLikes(params) {
 }
 
 app.post('/api/like', async (req, res) =>  {
+    // input json:
+    // { "id": "5", like: 1 }
+    // output json:
+    // { "success": Boolean, "error": [ERROR MESSAGE] }
+    // likes a product, can unlike if the like parameter is negative
 
     const { id, like } = req.body;
-
 
     const tokenResult = verifyAndDecodeToken(req);
     if (tokenResult.hasOwnProperty('error')) {
@@ -953,8 +999,12 @@ app.post('/api/like', async (req, res) =>  {
 
 
 app.post('/api/postComment', async (req, res) =>  {
+     // input json:
+    // { "id": "5", "message": "this is the worst piece of clothing i ever seen, would buy again" }
+    // output json:
+    // { "success": Boolean, "error": [ERROR MESSAGE] }
+    // likes a product, can unlike if the like parameter is negative
     const { message, id } = req.body;
-
     const tokenResult = verifyAndDecodeToken(req);
     if (tokenResult.hasOwnProperty('error')) {
         res.status(401).json({results: "", error:tokenResult.error});
@@ -965,6 +1015,10 @@ app.post('/api/postComment', async (req, res) =>  {
     const userProfiles = db.collection('userProfiles');
     const comments = db.collection('comments');
     let user = await userProfiles.findOne({"email": tokenResult.email});
+    if (!user) {
+        res.status(200).json({sucess: "false", error:"Cannot find user"});
+        return;
+    }
     const comment = {"message":message, "username":user.username};
     let document = await comments.findOne({ id: id});
     if (!document) {
