@@ -444,6 +444,60 @@ nextApp.prepare().then(() => {
     
     });
 
+    app.post('/api/editComment', async (req, res) => {
+
+        const tokenResult = verifyAndDecodeToken(req);
+        if (tokenResult.hasOwnProperty('error')) {
+            res.status(401).json({results: "", error:tokenResult.error});
+            return;
+        }
+        
+
+        const { index, message , productId } = req.body;
+        const db = client.db('Runway');
+        const comments = db.collection('comments');
+
+        const userProfiles = db.collection('userProfiles');
+        const user = await userProfiles.findOne({"email": tokenResult.email});
+        const username = user.username;
+
+        let document = await comments.findOne({ id: productId});
+        if (!document) {
+            res.status(404).json({results: "", error: "invalid productId"});
+            return;
+        }
+        let currentComments = document.comments;
+        if (!currentComments) {
+            res.status(404).json({results: "", error: "invalid productId"});
+            return;
+        }
+        try {
+            if (currentComments[index].username == username) {
+                if (message == "") {
+                    currentComments.splice(index, 1);
+                } else {
+                    currentComments[index].message = message;
+                }
+                
+            } else {
+                res.status(200).json({results: "", error: "Cannot edit someone else's comment"});
+                return;
+            }
+            
+        } catch (e) {
+            res.status(200).json({results: "", error: "Invalid Comment Index"});
+            return;
+        }
+        
+        comments.updateOne({id: productId}, {
+            $set: {'comments': currentComments},
+        });
+
+        res.status(200).json({results: "Success", error: ""});
+
+        
+    });
+
 
     app.post('/api/logout', (req, res) => {
     // Logs out the user
@@ -790,7 +844,7 @@ nextApp.prepare().then(() => {
     const params = {id:id, like:like, userProfiles:userProfiles, tokenResult:tokenResult, user:user, comments:comments};
     const didLike = updateUserLikes(params);
     if (didLike) {
-        updateDocumentLikes(params);
+        await updateDocumentLikes(params);
         updateUserRecommendationsBasedOffPost(params);
     } else {
         res.status(200).json({sucess: "false", error:"duplicate like"});
@@ -856,14 +910,22 @@ nextApp.prepare().then(() => {
        const comments = db.collection('comments');
        let document = await comments.findOne({ id: id});
        if (!document) {
+            console.log("cant find document! with id "+ id);
            let ret = {comments: []};
            res.status(200).json({ret:ret, error:""});
            return;
        }
+       
        let likes = 0;
-       if (document.likes) {
-           likes = document.likes;
-       } 
+       try {
+        likes = document['likes'];
+        if (typeof likes !== 'number') {
+            throw new Error("invalid!");
+        }
+       } catch (e) {
+        likes = 0;
+       }
+
        let usersThatLiked = [];
        if (document.usersThatLiked) {
            usersThatLiked = document.usersThatLiked;
@@ -960,9 +1022,6 @@ function getRandomInt(min, max) {
 
 
 //https://nodejs.org/api/worker_threads.html
-
-
-
 const searchRequestMap = new Map();
 worker.on('message', (msg) => {
     if (msg.type === 'loaded') {
@@ -986,9 +1045,6 @@ recommenderWorker.on('message', (msg) => {
         
     }
 });
-
-
-
 
 
 
@@ -1097,8 +1153,8 @@ function updateUserLikes(params) {
  */
 async function updateDocumentLikes(params) {
     const { id, like, tokenResult, comments,user } = params;
-    
     let comment = await comments.findOne({ id: id});
+    
     if (!comment) {
         let newDocument = {
             comments: [],
@@ -1119,10 +1175,15 @@ async function updateDocumentLikes(params) {
         usersThatLiked = [];
     }
     usersThatLiked.push(user.username);
-    comments.updateOne({id:id}, {
+    await comments.updateOne({id:id}, {
         $set: {'likes': comment.likes},
+    });
+    await comments.updateOne({id:id}, {
         $set: {'usersThatLiked': usersThatLiked}
     });
+    print("after doing stuff" + like);
+    let newcomment = await comments.findOne({ id: id});
+    print(newcomment);
     
     
 }
