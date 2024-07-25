@@ -195,7 +195,7 @@ export default function Profile() {
       >
         <Container component="main" maxWidth="xs"
           sx={{
-            height: '36vw',
+            height: 'clamp(490px, 20vh, 640px)',
             background: '#000000',
             boxShadow: '0px 0px 70vw rgba(188, 113, 223, 0.6)',
             marginTop: '10vw',
@@ -216,7 +216,7 @@ export default function Profile() {
             <img
               src={appicon1.src}
               loading="lazy"
-              style={{ width: '5vw', marginBottom: '20px' }}
+              style={{ width: '5vw'}}
             />
 
             <Typography component="h1" variant="h5" className="h1">
@@ -243,7 +243,7 @@ export default function Profile() {
               Reset Password?
             </Link>
 
-            <Link variant="body2" className="body2" onClick={logoutHandler} >
+            <Link variant="body2" className="body2" onClick={logoutHandler} style={{ cursor: 'pointer' }}>
               Logout
             </Link>
 
