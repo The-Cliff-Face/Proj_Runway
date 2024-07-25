@@ -4,6 +4,7 @@ import { MuiOtpInput } from 'mui-one-time-password-input';
 import { AuthContext } from '../AuthContext';
 import Popup from 'reactjs-popup';
 import { motion } from 'framer-motion';
+import "./styles.css";
 
 var bp = require('/src/app/Path.js');
 
