@@ -50,9 +50,9 @@ function AboutUs() {
                             <p><strong>This is our Large Project for COP4331.</strong></p>
                             <br></br>
                             <p><strong>Members</strong></p>
-                            <p>Clifford St. John: Project Manager</p>
-                            <p>Nicholas Mistry: API and Database</p>
-                            <p>Jacob Plotz: API and Database</p>
+                            <p>Clifford St. John: Project Manager / Database</p>
+                            <p>Nicholas Mistry: API / Database / Frontend</p>
+                            <p>Jacob Plotz: API / Frontend</p>
                             <p>Tanishqa Sahay: Frontend</p>
                             <p>Steven Hyunh: Mobile</p>
                             <p>Daniel Balasquide: API</p>
